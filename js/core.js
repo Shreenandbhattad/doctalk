@@ -47,7 +47,7 @@ B.closeSheet=function(){
   setTimeout(function(){ sc.hidden=true; B.$('#sheet').innerHTML=''; }, B.reduced?10:360);
 };
 
-B.prefs = B.load(PRE+'prefs') || {theme:'system', motion:'full', lang:'hinglish'};
+B.prefs = B.load(PRE+'prefs') || {theme:'light', motion:'full', lang:'hinglish'};
 B.reduced = !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
 B.applyPrefs=function(){
   var r=document.documentElement;
