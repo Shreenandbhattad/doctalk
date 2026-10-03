@@ -8,6 +8,7 @@
 <meta name="theme-color" content="#F4F8F3" media="(prefers-color-scheme: light)">
 <meta name="theme-color" content="#0C1711" media="(prefers-color-scheme: dark)">
 <link rel="manifest" href="manifest.webmanifest">
+<meta name="build" content="4">
 <link rel="icon" href="icons/favicon-32.png" sizes="32x32">
 <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -46,18 +47,14 @@
 <script src="js/scan.js?v=3"></script>
 <script src="js/app.js?v=3"></script>
 <script>
+// kill any worker a previous build installed, so a deploy is never masked
 if('serviceWorker' in navigator){
-  window.addEventListener('load', function(){
-    navigator.serviceWorker.register('sw.js').then(function(reg){
-      if(reg.waiting) reg.waiting.postMessage('skipWaiting');
-      reg.addEventListener('updatefound', function(){
-        var w = reg.installing;
-        if(w) w.addEventListener('statechange', function(){
-          if(w.state === 'installed' && navigator.serviceWorker.controller) w.postMessage('skipWaiting');
-        });
-      });
-    }).catch(function(){});
-  });
+  navigator.serviceWorker.getRegistrations().then(function(rs){
+    rs.forEach(function(r){ r.unregister(); });
+  }).catch(function(){});
+  if(window.caches && caches.keys) caches.keys().then(function(k){
+    k.forEach(function(n){ caches.delete(n); });
+  }).catch(function(){});
 }
 </script>
 </body>

@@ -50,9 +50,9 @@ p{margin:0}
 .muted{color:var(--muted)} .sm{font-size:14px} .xs{font-size:12.5px}
 
 /* ambient light, composited not painted */
-.aur{position:fixed; inset:-20%; z-index:0; pointer-events:none; filter:blur(70px); opacity:.5}
-.aur i{position:absolute; display:block; border-radius:50%;
-  animation:drift 26s ease-in-out infinite alternate; will-change:transform}
+.aur{position:fixed; inset:0; z-index:0; pointer-events:none; opacity:.55; overflow:hidden}
+.aur i{position:absolute; display:block; border-radius:50%; filter:blur(48px);
+  animation:drift 30s ease-in-out infinite alternate}
 .aur i:nth-child(1){width:52%; height:46%; left:6%;  top:4%;  background:var(--sage)}
 .aur i:nth-child(2){width:46%; height:42%; right:2%; top:28%; background:var(--leaf); opacity:.4; animation-duration:34s; animation-delay:-8s}
 .aur i:nth-child(3){width:58%; height:40%; left:14%; bottom:2%; background:var(--tint); animation-duration:30s; animation-delay:-16s}
