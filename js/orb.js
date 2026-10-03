@@ -51,7 +51,7 @@ B.Orb=function(host, opts){
   function readTokens(){
     var cs=getComputedStyle(document.documentElement);
     function tok(n,f){ var v=cs.getPropertyValue(n).trim(); return v||f; }
-    leaf=tok('--orb1','#2563EB'); sage=tok('--orb2','#6D9BF5'); tint=tok('--orb3','#D6EBFF');
+    leaf=tok('--orb1','#3FB2AE'); sage=tok('--orb2','#6BCFCB'); tint=tok('--orb3','#E2F8F6');
     paintSkin();
   }
 
