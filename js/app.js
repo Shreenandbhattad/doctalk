@@ -98,13 +98,20 @@ function onboard(step, draft){
     }
 
     if(step===0){
+      var halo=el('div','halo');
       var ow=el('div','orbwrap');
       ow.style.cssText='width:168px;height:168px';
-      ob.appendChild(ow);
+      halo.appendChild(el('div','orbit'));
+      halo.appendChild(ow);
+      ob.appendChild(halo);
       ob.appendChild(el('h1','','Say it out loud.<br><span class="g">Once.</span>'));
       ob.appendChild(el('p','','Some things are hard to say to anyone. Say them here instead, and walk out with the whole picture.'));
+      var pl=el('div','pills');
+      ['Private','Voice first','No sign up'].forEach(function(t){ pl.appendChild(el('span','',t)); });
+      ob.appendChild(pl);
       var g=el('button','btn primary wide','Get started');
       g.addEventListener('click', function(){ onboard(1, draft); });
+      g.style.marginTop='30px';
       ob.appendChild(g);
       var skip=el('button','btn ghost wide','I have been here before');
       skip.style.marginTop='6px';
@@ -232,34 +239,43 @@ function home(){
     var hb=el('button','btn primary', B.ICON.mic+'<span>Start talking</span>');
     hb.addEventListener('click', function(){ go('talk'); });
     hero.appendChild(hb);
+    var st=el('div','hstats');
+    [['90 sec','to say it'],['6','things it asks'],['0','uploads']].forEach(function(x){
+      st.appendChild(el('div','','<b>'+x[0]+'</b><span>'+x[1]+'</span>'));
+    });
+    hero.appendChild(st);
     s.appendChild(hero);
 
     var me=B.me||{};
     if(me.focus && me.focus.length){
       s.appendChild(sectionLabel('You are watching'));
-      var ch=el('div','chips');
-      ch.style.marginBottom='16px';
+      var sc=el('div','scroller');
+      sc.style.marginBottom='6px';
       me.focus.forEach(function(id){
         var a=B.conditions.get(id); if(!a) return;
-        var b=el('button','chip', esc(a.title));
+        var b=el('button','acard');
+        b.innerHTML='<div class="ai">'+esc(a.title.charAt(0))+'</div><div class="an">'+esc(a.title)+'</div><div class="as">'+esc(a.spec)+'</div>';
         b.addEventListener('click', function(){ condition(id,'home'); });
-        ch.appendChild(b);
+        sc.appendChild(b);
       });
-      var add=el('button','chip alt','+ Edit');
+      var add=el('button','acard add','Edit');
       add.addEventListener('click', function(){ focusSheet(home); });
-      ch.appendChild(add);
-      s.appendChild(ch);
+      sc.appendChild(add);
+      s.appendChild(sc);
     }
 
     s.appendChild(sectionLabel('Quick'));
-    var q=el('div','card');
-    [[B.ICON.pill,'Read a prescription','Photograph it, get each name explained', function(){ rx(); }],
-     [B.ICON.flask,'Check what you take','Find what cancels what out', function(){ meds(); }],
-     [B.ICON.book,'Look something up','Thirteen areas, what each one means', function(){ library(); }]
-    ].forEach(function(r){
-      q.appendChild(row(r[0], r[1], r[2], r[3]));
+    var bn=el('div','bento');
+    [[B.ICON.pill,'Prescription','Read it, name by name', rx],
+     [B.ICON.flask,'Interactions','What cancels what out', meds],
+     [B.ICON.book,'Library','Thirteen areas', library],
+     [B.ICON.shield,'When to worry','Signs that mean today', worry]
+    ].forEach(function(t){
+      var b=el('button','tile','<span class="ti2">'+t[0]+'</span><span><span class="tt">'+esc(t[1])+'</span><span class="tsb">'+esc(t[2])+'</span></span>');
+      b.addEventListener('click', t[3]);
+      bn.appendChild(b);
     });
-    s.appendChild(q);
+    s.appendChild(bn);
 
     var h=B.history();
     if(h.length){
@@ -311,7 +327,7 @@ function row(icon, title, sub, onTap){
 function talk(door){
   var S=B.newSession(door||'symptom');
   swap(function(){
-    var s=screen('full');
+    var s=screen('pad');
     s.appendChild(navbar('Home', function(){ go('home'); }));
     var t=el('div','talk');
 
