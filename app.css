@@ -1,22 +1,22 @@
 /* DocTalk */
 
 :root{
-  --bg:#F2F7FF;
+  --bg:#FAFBFD;
   --surface:#FFFFFF;
-  --raise:#F6FAFF;
-  --line:#DDE7F6;
-  --hair:#E9F0FB;
+  --raise:#F3F6FB;
+  --line:#E6EBF3;
+  --hair:#EEF2F8;
   --ink:#0A1A3A;
   --muted:#53668A;
   --faint:#8A9BBB;
-  --accent:#1F6BFF;
-  --accent2:#0FB5A6;
+  --accent:#2563EB;
+  --accent2:#2563EB;
   --on:#FFFFFF;
   --good:#12A66B;
   --warn:#E69A0B;
   --bad:#E5484D;
-  --orb1:#1F6BFF;
-  --orb2:#5AA9FF;
+  --orb1:#2563EB;
+  --orb2:#6D9BF5;
   --orb3:#D6EBFF;
   --disp:"Sora",system-ui,sans-serif;
   --ui:"Plus Jakarta Sans",-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
@@ -28,8 +28,8 @@
   color-scheme:light;
 }
 :root[data-theme="dark"]{
-  --bg:#060D1C; --surface:#0E1A31; --raise:#13223E; --line:#1D3055; --hair:#162745;
-  --ink:#EAF1FF; --muted:#93A8CC; --faint:#5F7399; --accent:#4D8DFF; --accent2:#2DD4BF;
+  --bg:#0A0E16; --surface:#11161F; --raise:#161C27; --line:#222B3A; --hair:#1A2230;
+  --ink:#EAF1FF; --muted:#93A8CC; --faint:#5F7399; --accent:#5B8DEF; --accent2:#5B8DEF;
   --on:#06122A; --orb1:#2F73FF; --orb2:#6DB4FF; --orb3:#DCEEFF;
   color-scheme:dark;
 }
@@ -374,3 +374,18 @@ textarea.textin{min-height:120px; resize:vertical}
 .interim{color:var(--faint)}
 .qlabel{font-size:11px; letter-spacing:.14em; text-transform:uppercase; color:var(--faint); font-weight:700}
 .block{background:var(--surface); border:1px solid var(--line); border-radius:22px; padding:18px}
+
+/* one theme: flat, quiet, a single accent */
+.bgwrap{display:none}
+.hero{background:var(--accent); box-shadow:none; border-radius:24px}
+.hero::after{display:none}
+.hero .btn.primary{background:#fff; color:var(--accent); box-shadow:none}
+.ava{background:var(--accent); box-shadow:none}
+.btn.primary{box-shadow:none}
+.tool .ti{background:var(--raise); color:var(--accent)}
+.tool{border-radius:18px}
+.card,.dcard,.block,.med{border-radius:18px}
+.icbtn{border-radius:12px}
+.chip.alt.on,.chip.on{background:var(--accent); border-color:var(--accent); color:#fff}
+:root[data-theme="dark"] .chip.on,:root[data-theme="dark"] .chip.alt.on{color:#fff}
+.preview .scanline{box-shadow:none}

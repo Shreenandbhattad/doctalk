@@ -632,13 +632,13 @@ function tools(){
     s.appendChild(el('div','title','Tools'));
     s.appendChild(el('p','sub','Four things worth having on a phone when nobody is around to ask.'));
 
-    [[B.ICON.cam,'Read a prescription','Photograph it and get each name explained','linear-gradient(140deg,#1F6BFF,#5AA9FF)', rx],
-     [B.ICON.flask,'Interaction check','See what cancels what out, and what to space apart','linear-gradient(140deg,#6C5CFF,#9C8CFF)', meds],
-     [B.ICON.book,'Condition library','Thirteen areas, what gets asked and what gets checked','linear-gradient(140deg,#0FB5A6,#5AD6C8)', library],
-     [B.ICON.shield,'When to worry','The signs that mean today, not next week','linear-gradient(140deg,#E5484D,#FF8A8F)', worry]
+    [[B.ICON.cam,'Read a prescription','Photograph it and get each name explained',"", rx],
+     [B.ICON.flask,'Interaction check','See what cancels what out, and what to space apart',"", meds],
+     [B.ICON.book,'Condition library','Thirteen areas, what gets asked and what gets checked',"", library],
+     [B.ICON.shield,'When to worry','The signs that mean today, not next week',"", worry]
     ].forEach(function(t){
       var b=el('button','tool');
-      b.innerHTML='<span class="ti" style="background:'+t[3]+'">'+t[0]+'</span>'+
+      b.innerHTML='<span class="ti">'+t[0]+'</span>'+
         '<span class="tb"><span class="tn">'+esc(t[1])+'</span><span class="ts">'+esc(t[2])+'</span></span>'+
         '<span class="tc">&rsaquo;</span>';
       b.addEventListener('click', t[4]);
@@ -1023,7 +1023,7 @@ function meds(){
 
 function addRow(m, onTap){
   var b=el('button','tool');
-  b.innerHTML='<span class="ti" style="background:linear-gradient(140deg,#6C5CFF,#9C8CFF)">'+B.ICON.pill+'</span>'+
+  b.innerHTML='<span class="ti">'+B.ICON.pill+'</span>'+
     '<span class="tb"><span class="tn">'+esc(m.n)+'</span><span class="ts">'+esc(m.w)+'</span></span>'+
     '<span class="tc">+</span>';
   b.addEventListener('click', onTap);
