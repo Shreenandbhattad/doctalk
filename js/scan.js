@@ -103,5 +103,31 @@ function medCard(m, conf){
   return d;
 }
 
-B.scan={ MEDS:MEDS, match:match, textBlocks:textBlocks, medCard:medCard };
+var RULES=[
+ {a:'Iron',b:'Levothyroxine',sev:2,t:'Iron stops your thyroid tablet working',
+  d:'Iron binds levothyroxine in the gut and both end up wasted. Keep four hours between them, every day.'},
+ {a:'Iron',b:'Pantoprazole',sev:1,t:'Acidity tablets cut iron absorption',
+  d:'Iron needs stomach acid. On a PPI you absorb much less, so take them as far apart as you can and mention it to your doctor.'},
+ {a:'Iron',b:'Doxycycline',sev:2,t:'Iron stops doxycycline working',
+  d:'They bind to each other and neither is absorbed. Two to three hours apart.'},
+ {a:'Levothyroxine',b:'Pantoprazole',sev:1,t:'Less acid means less thyroid hormone absorbed',
+  d:'The same dose does less on a PPI. Worth mentioning at your next thyroid test.'},
+ {a:'Isotretinoin',b:'Doxycycline',sev:3,t:'These two are not combined',
+  d:'Together they raise the risk of pressure around the brain. Speak to the prescriber before the next dose.'},
+ {a:'Benzoyl peroxide',b:'Adapalene',sev:1,t:'Use these at different times',
+  d:'Benzoyl peroxide in the morning, the retinoid at night. Layered together they mostly irritate.'},
+ {a:'Metformin',b:'Pantoprazole',sev:1,t:'Both lower vitamin B12 over time',
+  d:'Neither is a reason to stop. It is a reason to have B12 checked once a year.'},
+ {a:'Sildenafil',b:'Pantoprazole',sev:0,t:'No interaction worth worrying about',d:'Fine together.'}
+];
+function conflicts(names){
+  var out=[];
+  RULES.forEach(function(r){
+    if(!r.sev) return;
+    if(names.indexOf(r.a)>-1 && names.indexOf(r.b)>-1) out.push(r);
+  });
+  out.sort(function(x,y){ return y.sev-x.sev; });
+  return out;
+}
+B.scan={ MEDS:MEDS, match:match, textBlocks:textBlocks, medCard:medCard, conflicts:conflicts, RULES:RULES };
 })();

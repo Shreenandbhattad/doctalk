@@ -1,6 +1,6 @@
-var CACHE='doctalk-1';
+var CACHE='doctalk-3';
 var ASSETS=['./','./index.html','./app.css','./manifest.webmanifest',
-  './js/core.js','./js/orb.js','./js/speech.js','./js/interview.js',
+  './js/core.js','./js/motion.js','./js/orb.js','./js/conditions.js','./js/speech.js','./js/interview.js',
   './js/card.js','./js/scan.js','./js/app.js',
   './icons/icon-192.png','./icons/icon-512.png','./icons/apple-touch-icon.png','./icons/favicon-32.png'];
 

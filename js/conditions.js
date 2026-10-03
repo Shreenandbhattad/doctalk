@@ -21,7 +21,7 @@ hair:A({label:'hair', title:'Hair and scalp', spec:'Dermatologist',
    d:'Shedding that follows an illness, surgery, crash diet or a hard few months, usually about three months later. It is the commonest diffuse shedding and it reverses.'},
   {t:'Pattern hair loss', if:function(s){ return s.shape==='pattern'; },
    d:'Gradual loss at the hairline and crown, often in the family. It responds to treatment slowly and needs it kept up.'},
-  {t:'Alopecia areata', if:function(s){ return s.shape==='patch'; },
+  {t:'Alopecia areata', u:1, if:function(s){ return s.shape==='patch'; },
    d:'Smooth coin shaped bald patches. Different cause and different treatment, so it is worth showing a doctor rather than treating at home.'},
   {t:'Iron, thyroid or vitamin D', if:function(){ return true; },
    d:'Low ferritin and thyroid problems both cause shedding and both are cheap to rule out before anything is prescribed.'}
@@ -133,7 +133,7 @@ sleep:A({label:'sleep', title:'Sleep', spec:'GP, or a sleep clinic',
    pick:[['yes','Yes'],['no','No'],['dunno','Nobody has said']]}
  ],
  consider:[
-  {t:'Sleep apnoea', if:function(s){ return s.snore==='yes'; },
+  {t:'Sleep apnoea', u:1, if:function(s){ return s.snore==='yes'; },
    d:'Loud snoring with pauses, plus daytime tiredness despite enough hours. It is common, under diagnosed, and treatable once confirmed.'},
   {t:'Insomnia from the clock', if:function(s){ return s.which==='fall'; },
    d:'Trouble falling asleep is usually a body clock and wind down problem rather than a chemical one.'},
@@ -157,7 +157,7 @@ mood:A({label:'how you have been feeling', title:'Mood and stress', spec:'GP or 
    pick:[['yes','Yes, clearly'],['little','A little'],['no','Not really']]}
  ],
  consider:[
-  {t:'Worth a proper assessment', if:function(s){ return s.howlong2==='most' && s.function==='yes'; },
+  {t:'Worth a proper assessment', u:1, if:function(s){ return s.howlong2==='most' && s.function==='yes'; },
    d:'Most days, for weeks, with work or sleep affected is the point at which this is treated rather than waited out. That is a medical threshold, not a judgement.'},
   {t:'Thyroid and vitamin deficiency', if:function(){ return true; },
    d:'Thyroid problems, low B12 and low vitamin D all produce low mood and fatigue, and they are checked first because they are simple to correct.'},
@@ -178,7 +178,7 @@ energy:A({label:'energy', title:'Tiredness', spec:'GP',
    pick:[['yes','Yes'],['no','No']]}
  ],
  consider:[
-  {t:'Anaemia', if:function(s){ return s.breath2==='yes'; },
+  {t:'Anaemia', u:1, if:function(s){ return s.breath2==='yes'; },
    d:'Tiredness with breathlessness on mild effort is checked for low haemoglobin first. Very common, especially with heavy periods.'},
   {t:'Thyroid', if:function(){ return true; },
    d:'An underactive thyroid produces exactly this picture, along with feeling cold and gaining weight.'},
@@ -199,7 +199,7 @@ weight:A({label:'weight', title:'Weight change', spec:'GP or endocrinologist',
    pick:[['yes','Yes, deliberately'],['no','No, it just happened']]}
  ],
  consider:[
-  {t:'Unintentional loss needs looking at', if:function(s){ return s.dir==='down' && s.intent==='no'; },
+  {t:'Unintentional loss needs looking at', u:1, if:function(s){ return s.dir==='down' && s.intent==='no'; },
    d:'Losing weight without trying is one of the few symptoms that is always investigated, because the list of causes is wide.'},
   {t:'Thyroid', if:function(){ return true; },
    d:'Underactive causes gain, overactive causes loss, and it is the first blood test either way.'},
@@ -248,7 +248,7 @@ breath:A({label:'breathing', title:'Cough and breathing', spec:'GP, or a pulmono
    d:'A cough that is worse at night or on exertion is often asthma, including in adults who never had it as children.'},
   {t:'Post infection cough', if:function(s){ return s.howlong3==='mid'; },
    d:'A cough can linger for weeks after an infection clears, and antibiotics do nothing for it.'},
-  {t:'Needs ruling out at six weeks', if:function(s){ return s.howlong3==='long'; },
+  {t:'Needs ruling out at six weeks', u:1, if:function(s){ return s.howlong3==='long'; },
    d:'A cough beyond six weeks is investigated properly. In India that includes ruling out tuberculosis, which is common and very treatable.'}
  ],
  tests:['Chest x ray if the cough is over three weeks','Sputum testing where TB is a possibility','Complete blood count','Spirometry if asthma is suspected'],
@@ -257,7 +257,7 @@ breath:A({label:'breathing', title:'Cough and breathing', spec:'GP, or a pulmono
    d:'Coughing blood, night sweats with weight loss, or real breathlessness are all seen urgently.'}]}),
 
 pain:A({label:'pain', title:'Pain', spec:'GP',
- kw:['dard','pain','ache','sir dard','headache','migraine','kamar','back','joint','ghutna','knee','jodo'],
+ kw:['dard','pain','ache','sar dard','sir dard','headache','migraine','kamar','back','joint','ghutna','knee','jodo','kandha'],
  ask:[
   {k:'spot', q:'Where is it, mostly?', h:'Sar, kamar, jodon me, ya kahin aur.',
    pick:[['head','Head'],['back','Back or neck'],['joint','Joints'],['other','Somewhere else']]},
@@ -292,7 +292,7 @@ fever:A({label:'fever', title:'Fever and infection', spec:'GP',
    d:'Most short fevers are viral and settle. Antibiotics do nothing for them.'},
   {t:'Dengue, typhoid, malaria', if:function(s){ return s.days==='3' || s.with==='rash'; },
    d:'In India a fever beyond three days is commonly tested for these rather than treated blind, especially after the monsoon.'},
-  {t:'Fever beyond a week', if:function(s){ return s.days==='7'; },
+  {t:'Fever beyond a week', u:1, if:function(s){ return s.days==='7'; },
    d:'A week of fever is always investigated, because the causes stop being the simple ones.'}
  ],
  tests:['Complete blood count with platelets','Dengue NS1 and IgM where relevant','Malaria smear or antigen','Typhoid testing','Urine routine'],
@@ -315,7 +315,7 @@ B.conditions={
     ORDER.forEach(function(id){
       var n=0;
       AREAS[id].kw.forEach(function(k){
-        if(t.indexOf(' '+k)>-1 || t.indexOf(k+' ')>-1) n += k.length>=5 ? 3 : 1;
+        if(t.indexOf(' '+k)>-1 || t.indexOf(k+' ')>-1) n += k.length>=5 ? 3 : 2;
       });
       if(n>score){ score=n; best=id; }
     });

@@ -22,7 +22,7 @@ if(sheet && sheet.parentNode!==global.document.getElementById('scrim')){
 
 let bad=false;
 console.log('loading modules');
-for(const f of ['js/core.js','js/orb.js','js/speech.js','js/interview.js','js/card.js','js/scan.js','js/app.js']){
+for(const f of ['js/core.js','js/motion.js','js/orb.js','js/conditions.js','js/speech.js','js/interview.js','js/card.js','js/scan.js','js/app.js']){
   try{ (0,eval)(fs.readFileSync(path.join(root,f),'utf8')); console.log('  ok   '+f); }
   catch(e){ bad=true; console.log('  FAIL '+f+' -> '+e.message); console.log('       '+(e.stack||'').split('\n')[1]); break; }
 }

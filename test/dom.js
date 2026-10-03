@@ -69,7 +69,7 @@ global.document={
   getElementById:id=>find(body,'#'+id),
   querySelector:sel=>find(body,sel)||(matches(docEl,sel)?docEl:null),
   querySelectorAll:sel=>findAll(body,sel),
-  addEventListener(){}, createRange:()=>({selectNodeContents(){}})
+  addEventListener(){}, removeEventListener(){}, hidden:false, createRange:()=>({selectNodeContents(){}})
 };
 global.window={
   addEventListener(){}, removeEventListener(){}, scrollTo(){},

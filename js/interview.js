@@ -20,7 +20,10 @@ var AREAS=[
 var FLAGS=[
  {id:'cardiac', t:'Chest pain needs to be seen today',
   d:'Chest pain, pressure or pain spreading to the arm or jaw, especially with breathlessness or sweating, is checked urgently and not at home.',
-  kw:['chest pain','seene me dard','seene mein dard','chhati me dard','heart attack','dil me dard','saans nahi aa rahi','breathless','saans phool']},
+  kw:['chest pain','seene me dard','seene mein dard','chhati me dard','heart attack','dil me dard','seene me jakdan','chest tightness']},
+ {id:'acutebreath', t:'Sudden breathlessness needs urgent care',
+  d:'Struggling to breathe at rest, or breathlessness that came on suddenly, is seen the same day rather than waited out.',
+  kw:['saans nahi aa rahi','cannot breathe','dum ghut','gasping','saans ruk']},
  {id:'bleed', t:'Heavy bleeding needs urgent care',
   d:'Soaking a pad every hour, passing large clots, or bleeding that will not stop should be seen the same day.',
   kw:['bahut khoon','heavy bleeding','khoon ruk nahi','blood nahi ruk','har ghante pad','clots','blood vomit','khoon ki ulti','stool me khoon','potty me khoon']},
@@ -42,13 +45,8 @@ function norm(s){ return ' '+String(s||'').toLowerCase().replace(/[^\w\sऀ-ॿ]
 function has(hay, kw){ return hay.indexOf(' '+kw)>-1 || hay.indexOf(kw+' ')>-1 || hay.indexOf(kw)>-1; }
 
 function detectArea(text){
-  var t=norm(text), best=null, score=0;
-  AREAS.forEach(function(a){
-    var n=0;
-    a.kw.forEach(function(k){ if(has(t,k)) n++; });
-    if(n>score){ score=n; best=a; }
-  });
-  return best;
+  var id=B.conditions.detect(text);
+  return id ? {id:id, label:B.conditions.label(id)} : null;
 }
 function detectFlags(text){
   var t=norm(text), out=[];
@@ -154,7 +152,18 @@ function extract(session, text){
   var im=impactIn(text); if(im){ s.impact=(s.impact||[]).concat(im).filter(function(v,i,arr){ return arr.indexOf(v)===i; }).slice(0,3); }
   var h=historyIn(text); if(h && !s.history) s.history=h;
   var f=detectFlags(text);
-  f.forEach(function(x){ if(session.flags.indexOf(x)<0) session.flags.push(x); });
+  var area=s.area && B.conditions.get(s.area);
+  if(area) area.flags.forEach(function(af){
+    for(var i=0;i<af.kw.length;i++) if(has(norm(text), af.kw[i])){
+      if(!f.some(function(x){ return x.t===af.t; })) f.push({id:'area', t:af.t, d:af.d});
+      break;
+    }
+  });
+  f.forEach(function(x){
+    var seen=false;
+    session.flags.forEach(function(y){ if(y.t===x.t) seen=true; });
+    if(!seen) session.flags.push(x);
+  });
   return f;
 }
 function filled(session){
@@ -205,19 +214,77 @@ var OPENERS={
 
 function nextQuestion(session){
   var s=session.slots;
-  if(!s.complaint) return OPENERS[session.door==='ask'?'ask':'symptom'];
-  var order=['duration','severity','tried','impact','pattern','triggers','history'];
-  for(var i=0;i<order.length;i++){
-    var k=order[i];
+  if(!s.complaint) return OPENERS.symptom;
+  var order=['duration','severity'];
+  var i,k;
+  for(i=0;i<order.length;i++){
+    k=order[i];
     if(k==='severity'){ if(s.severity===undefined) return ASK[k]; continue; }
-    if(!s[k] || (s[k].length===0)) return ASK[k];
+    if(!s[k]) return ASK[k];
+  }
+  var area=s.area && B.conditions.get(s.area);
+  if(area){
+    for(i=0;i<area.ask.length;i++){
+      var a=area.ask[i];
+      if(s[a.k]===undefined) return {q:a.q, h:a.h, pick:a.pick, key:a.k};
+    }
+  }
+  order=['tried','impact','pattern','triggers','history'];
+  for(i=0;i<order.length;i++){
+    k=order[i];
+    if(!s[k] || s[k].length===0) return ASK[k];
   }
   return null;
+}
+
+function answerPick(session, key, value){
+  session.slots[key]=value;
+}
+
+// what a doctor is weighing, which tests usually come first, and how soon
+function assess(session){
+  var s=session.slots;
+  var area=s.area && B.conditions.get(s.area);
+  var urgency='routine', why='Nothing here suggests this needs to be rushed.';
+  if(session.flags.length){
+    urgency='now';
+    why=session.flags[0].d;
+  } else if((s.severity||0)>=8){
+    urgency='soon';
+    why='You rated this '+s.severity+' out of 10, which is enough on its own to be seen rather than waited out.';
+  } else if(s.duration && s.duration.days>=180){
+    urgency='soon';
+    why='This has been going on for '+s.duration.label+'. At that length it is worth a proper look rather than another thing tried at home.';
+  } else if(s.pattern==='getting worse'){
+    urgency='soon';
+    why='It is getting worse rather than settling, which is the usual reason to bring an appointment forward.';
+  }
+  var consider=[];
+  if(area){
+    area.consider.forEach(function(c){
+      var hit=false;
+      try{ hit=c.if(s); }catch(e){ hit=false; }
+      if(hit) consider.push({t:c.t, d:c.d, u:c.u});
+    });
+    consider.forEach(function(c2){
+      if(c2.u && urgency==='routine'){
+        urgency='soon';
+        why='One of the things being considered here, '+c2.t.toLowerCase()+', is the kind that gets checked rather than watched.';
+      }
+    });
+  }
+  return {
+    area:area, urgency:urgency, why:why,
+    spec:area?area.spec:'A general physician',
+    consider:consider.slice(0,4),
+    tests:area?area.tests:[]
+  };
 }
 
 B.interview = {
   AREAS:AREAS, FLAGS:FLAGS, SLOTS:SLOTS, PETALS:PETALS,
   extract:extract, next:nextQuestion, completeness:completeness, filled:filled,
+  answerPick:answerPick, assess:assess,
   detectArea:detectArea, detectFlags:detectFlags,
   durationIn:durationIn, severityIn:severityIn, triedIn:triedIn,
   triggersIn:triggersIn, impactIn:impactIn, patternIn:patternIn, historyIn:historyIn,

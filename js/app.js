@@ -51,13 +51,13 @@ function home(){
     var doors=el('div','doors');
     [['symptom', B.ICON.spark, 'Something is bothering me', 'Talk it through and see it clearly'],
      ['rx',      B.ICON.pill,  'I have a prescription',     'Photograph it, get it explained'],
-     ['ask',     B.ICON.ask,   'I have a question I keep forgetting', 'Say it now, keep it written down']
+     ['meds',    B.ICON.ask,   'Check what I am taking', 'Find what cancels what out']
     ].forEach(function(d,i){
       var b=el('button','door',
-        '<span class="di">'+d[1]+'</span>'+
+        '<span class="dn">0'+(i+1)+'</span>'+
         '<span class="dt"><span class="dl">'+esc(d[2])+'</span><span class="ds">'+esc(d[3])+'</span></span>'+
         '<span class="dc">&rsaquo;</span>');
-      b.addEventListener('click', function(){ d[0]==='rx' ? rx() : room(d[0]); });
+      b.addEventListener('click', function(){ d[0]==='rx' ? rx() : d[0]==='meds' ? meds() : room(d[0]); });
       if(!B.reduced) b.style.animation='rise .6s cubic-bezier(.17,.84,.36,1) '+(260+i*70)+'ms backwards';
       doors.appendChild(b);
     });
@@ -99,6 +99,9 @@ function room(door){
     cap.appendChild(capEl);
     r.appendChild(cap);
 
+    var picks=el('div','picks');
+    r.appendChild(picks);
+
     var pet=el('div','petals');
     B.interview.PETALS.forEach(function(p){
       pet.appendChild(el('span','petal','<i class="pd"></i>'+esc(p.label)));
@@ -135,6 +138,19 @@ function room(door){
         }
       });
       var n=B.interview.next(S);
+      picks.innerHTML='';
+      if(n && n.pick){
+        n.pick.forEach(function(p,i){
+          var pb=el('button','pick',esc(p[1]));
+          pb.addEventListener('click', function(){
+            B.interview.answerPick(S, n.key, p[0]);
+            setCaption(p[1]);
+            refresh();
+          });
+          if(!B.reduced) pb.style.animation='pop .4s var(--spring) '+(i*60)+'ms backwards';
+          picks.appendChild(pb);
+        });
+      }
       qLabel.textContent = n ? ('Question '+(S.turns.length+1)) : 'Your story is ready';
       if(n){
         if(qEl.textContent!==n.q && !B.reduced){
@@ -235,40 +251,204 @@ function typeSheet(S, after, onText){
 }
 
 function card(S){
-  var c=B.card.build(S);
+  var c=B.card.build(S), a=B.interview.assess(S), tab='story';
   swap(function(){
     var root=el('div','');
     root.appendChild(topbar('Back', function(){ room(S.door); }));
     var w=el('div','cardwrap');
-    var node=B.card.render(c);
-    if(!B.reduced) node.style.animation='pop .62s cubic-bezier(.2,1.12,.38,1) backwards';
-    w.appendChild(node);
+
+    var tone = a.urgency==='now' ? 'var(--coral)' : a.urgency==='soon' ? 'var(--amber)' : 'var(--leaf)';
+    var head = a.urgency==='now' ? 'Get this looked at today'
+             : a.urgency==='soon' ? 'Worth booking this week'
+             : 'No rush, but worth raising';
+    var u=el('div','urg');
+    u.style.setProperty('--uc', tone);
+    u.innerHTML='<span class="ui"></span><span class="ub"><span class="ut">'+esc(head)+
+      '</span><span class="us">'+esc(a.why)+(a.spec?' Usually a '+esc(a.spec.toLowerCase())+'.':'')+'</span></span>';
+    w.appendChild(u);
+
+    var tabs=el('div','tabs');
+    var panel=el('div','');
+    var TABS=[['story','Story'],['think','Considered'],['tests','Tests'],['ask','Ask']];
+    TABS.forEach(function(t){
+      var b=el('button','tab',esc(t[1]));
+      b.setAttribute('aria-selected', tab===t[0]?'true':'false');
+      b.addEventListener('click', function(){
+        tab=t[0];
+        Array.prototype.forEach.call(tabs.children,function(n,i){
+          n.setAttribute('aria-selected', TABS[i][0]===tab?'true':'false');
+        });
+        paint();
+      });
+      tabs.appendChild(b);
+    });
+    w.appendChild(tabs);
+    w.appendChild(panel);
+
+    function paint(){
+      panel.innerHTML='';
+      if(tab==='story'){
+        panel.appendChild(B.card.render(c));
+      } else if(tab==='think'){
+        var box=el('div','dcard');
+        box.appendChild(el('div','ck','What a doctor will weigh'));
+        if(!a.consider.length){
+          box.appendChild(el('p','lede','Not enough detail yet to narrow it. Go back and answer a couple more questions.'));
+        }
+        a.consider.forEach(function(x){
+          var row=el('div','consider');
+          row.innerHTML='<div class="ct">'+esc(x.t)+'</div><div class="cx">'+esc(x.d)+'</div>';
+          box.appendChild(row);
+        });
+        box.appendChild(el('p','hint','These are the things commonly ruled in or out for what you described. It is how the conversation usually goes, not a diagnosis, and the order can change once someone examines you.'));
+        panel.appendChild(box);
+      } else if(tab==='tests'){
+        var tb=el('div','dcard');
+        tb.appendChild(el('div','ck','What is usually checked first'));
+        var ul=el('ul','tlist');
+        (a.tests.length?a.tests:['Nothing specific at this stage']).forEach(function(t){
+          ul.appendChild(el('li','',esc(t)));
+        });
+        tb.appendChild(ul);
+        tb.appendChild(el('p','hint','Bring this up rather than booking it yourself. A doctor may skip some of it after examining you, and ordering tests without a reason tends to find things that were never the problem.'));
+        panel.appendChild(tb);
+      } else {
+        var qb=el('div','dcard');
+        qb.appendChild(el('div','ck','Worth asking'));
+        var ol=el('ol','qlist');
+        c.questions.forEach(function(q){ ol.appendChild(el('li','',esc(q))); });
+        qb.appendChild(ol);
+        if(S.flags.length){
+          var fl=el('div','consider');
+          fl.innerHTML='<div class="ct">Say this first</div><div class="cx">'+esc(S.flags[0].t)+'. '+esc(S.flags[0].d)+'</div>';
+          qb.appendChild(fl);
+        }
+        panel.appendChild(qb);
+      }
+      B.reveal(panel,{step:0,start:0,from:10});
+    }
+    paint();
 
     var acts=el('div','actions');
     var save=el('button','btn primary', B.ICON.down+'<span>Save image</span>');
-    save.addEventListener('click', function(){ savePng(node); });
+    save.addEventListener('click', function(){
+      var n=panel.querySelector('.dcard');
+      if(n) savePng(n); else B.toast('Open the Story tab first.');
+    });
     var wa=el('button','btn quiet', B.ICON.wa+'<span>WhatsApp</span>');
     wa.addEventListener('click', function(){
-      window.open('https://wa.me/?text='+encodeURIComponent(B.card.text(c)), '_blank', 'noopener');
+      window.open('https://wa.me/?text='+encodeURIComponent(fullText(c,a,S)), '_blank', 'noopener');
     });
-    var copy=el('button','btn quiet wide','Copy as text');
+    var copy=el('button','btn quiet wide','Copy everything');
     copy.addEventListener('click', function(){
-      var t=B.card.text(c);
+      var t=fullText(c,a,S);
       if(navigator.clipboard && navigator.clipboard.writeText){
-        navigator.clipboard.writeText(t).then(function(){ B.toast('Copied.'); }, function(){ B.toast('Select the card and copy.'); });
-      } else B.toast('Select the card and copy.');
+        navigator.clipboard.writeText(t).then(function(){ B.toast('Copied.'); }, function(){ B.toast('Select and copy.'); });
+      } else B.toast('Select and copy.');
     });
     var again=el('button','btn ghost wide','Start again');
     again.addEventListener('click', function(){ B.clearAll(); home(); });
-    acts.appendChild(save);
-    acts.appendChild(wa);
-    acts.appendChild(copy);
-    acts.appendChild(again);
+    acts.appendChild(save); acts.appendChild(wa); acts.appendChild(copy); acts.appendChild(again);
     w.appendChild(acts);
 
     root.appendChild(w);
     stage.appendChild(root);
-    B.stagger(w, 70, 120);
+    B.reveal(w,{step:70,start:100});
+  });
+}
+
+function fullText(c,a,S){
+  var L=[B.card.text(c), ''];
+  L.push('HOW URGENT');
+  L.push('  '+(a.urgency==='now'?'Today':a.urgency==='soon'?'This week':'Not urgent')+'. '+a.why);
+  if(a.spec) L.push('  Usually seen by: '+a.spec);
+  if(a.consider.length){
+    L.push('');
+    L.push('WHAT IS USUALLY CONSIDERED');
+    a.consider.forEach(function(x){ L.push('  '+x.t+'. '+x.d); });
+  }
+  if(a.tests.length){
+    L.push('');
+    L.push('USUALLY CHECKED FIRST');
+    a.tests.forEach(function(t){ L.push('  '+t); });
+  }
+  L.push('');
+  L.push('Not a diagnosis. Built from my own words.');
+  return B.clean(L.join('\n'));
+}
+
+function meds(){
+  swap(function(){
+    var root=el('div','');
+    root.appendChild(topbar('Back', home));
+    var w=el('div','cardwrap');
+    var hdr=el('div','hdr');
+    hdr.innerHTML='<h1>What are you taking?</h1><p>Add everything, including supplements. Half of what people take cancels something else out.</p>';
+    w.appendChild(hdr);
+
+    var chosen=[];
+    var inp=el('input','textin');
+    inp.type='text';
+    inp.placeholder='Start typing, for example Mintop, Pantop, iron';
+    inp.style.minHeight='54px';
+    w.appendChild(inp);
+    var res=el('div','');
+    res.style.marginTop='10px';
+    w.appendChild(res);
+    var out=el('div','');
+    out.style.marginTop='16px';
+    w.appendChild(out);
+
+    function paint(){
+      out.innerHTML='';
+      if(!chosen.length){ return; }
+      var pills=el('div','picks');
+      pills.style.justifyContent='flex-start';
+      chosen.forEach(function(m,i){
+        var p=el('button','pick on', esc(m.n)+'  \u00d7');
+        p.addEventListener('click', function(){ chosen.splice(i,1); paint(); });
+        pills.appendChild(p);
+      });
+      out.appendChild(pills);
+
+      var names=chosen.map(function(m){ return m.n; });
+      var cl=B.scan.conflicts(names);
+      var box=el('div','dcard');
+      box.style.marginTop='14px';
+      box.appendChild(el('div','ck', cl.length ? cl.length+' thing'+(cl.length>1?'s':'')+' to fix' : 'Nothing is fighting anything'));
+      if(!cl.length){
+        box.appendChild(el('p','lede','No known clash between these. Keep the timings on each label and you are fine.'));
+      }
+      cl.forEach(function(r){
+        var row=el('div','clash'+(r.sev>=3?' bad':''));
+        row.innerHTML='<span class="cd"></span><span class="cb"><span class="ch">'+esc(r.t)+
+          '</span><span class="cs">'+esc(r.d)+'</span></span>';
+        box.appendChild(row);
+      });
+      box.appendChild(el('p','hint','Timing guidance only, not dosing advice. If a prescriber told you differently about your own medicines, they are right.'));
+      out.appendChild(box);
+
+      chosen.forEach(function(m){ out.appendChild(B.scan.medCard(m,true)); });
+    }
+
+    inp.addEventListener('input', function(){
+      res.innerHTML='';
+      B.scan.match(inp.value).forEach(function(m){
+        var b=el('button','door');
+        b.innerHTML='<span class="dt"><span class="dl">'+esc(m.n)+'</span><span class="ds">'+esc(m.w)+'</span></span><span class="dc">+</span>';
+        b.addEventListener('click', function(){
+          var seen=false;
+          chosen.forEach(function(x){ if(x.n===m.n) seen=true; });
+          if(!seen) chosen.push(m);
+          inp.value=''; res.innerHTML=''; paint();
+        });
+        res.appendChild(b);
+      });
+    });
+
+    root.appendChild(w);
+    stage.appendChild(root);
+    B.reveal(w,{step:70,start:80});
   });
 }
 
