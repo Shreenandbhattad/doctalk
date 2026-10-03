@@ -53,7 +53,7 @@ B.Mic=function(handlers){
       if(!SR){ blocked=true; if(handlers.onBlocked) handlers.onBlocked('no-engine'); return; }
       try{
         rec=new SR();
-                rec.lang = B.prefs.lang==='english' ? 'en-IN' : 'hi-IN';
+        rec.lang = B.prefs.lang==='english' ? 'en-IN' : 'hi-IN';
         rec.continuous=true; rec.interimResults=true; rec.maxAlternatives=1;
         rec.onstart=function(){ running=true; blocked=false; startMeter(); if(handlers.onStart) handlers.onStart(); };
         rec.onresult=function(ev){
@@ -93,15 +93,72 @@ B.Mic=function(handlers){
   };
 };
 
-B.say=function(text){
-  if(!B.prefs.voiceBack) return;
+var cache={}, audio=null, tick=null, token=0;
+
+B.cloudVoice=function(){ return !!(B.config && B.config.voice); };
+
+function pulse(on, onAmp){
+  if(tick){ clearInterval(tick); tick=null; }
+  if(!on){ if(onAmp) onAmp(0); return; }
+  var t=0;
+  tick=setInterval(function(){
+    t+=0.22;
+    if(onAmp) onAmp(0.28+0.2*Math.sin(t*2.1)+0.12*Math.sin(t*5.3)+Math.random()*0.08);
+  }, 60);
+}
+
+B.hush=function(){
+  token++;
+  pulse(false, B.onSpeakAmp);
+  if(audio){ try{ audio.pause(); }catch(e){} audio=null; }
+  try{ if(window.speechSynthesis) window.speechSynthesis.cancel(); }catch(e){}
+};
+
+function viaBrowser(text, myToken, done){
   try{
-    if(!window.speechSynthesis) return;
-    var u=new SpeechSynthesisUtterance(B.clean(text));
+    if(!window.speechSynthesis){ done(); return; }
+    var u=new SpeechSynthesisUtterance(text);
     u.lang = B.prefs.lang==='english' ? 'en-IN' : 'hi-IN';
-    u.rate=0.98; u.pitch=1.0;
+    u.rate=1; u.pitch=1;
+    u.onend=u.onerror=function(){ if(myToken===token) done(); };
     window.speechSynthesis.cancel();
     window.speechSynthesis.speak(u);
-  }catch(e){}
+  }catch(e){ done(); }
+}
+
+function viaCloud(text, myToken, done, fail){
+  var hit=cache[text];
+  var get = hit ? Promise.resolve(hit) :
+    fetch(B.config.voice, {method:'POST', headers:{'content-type':'application/json'}, body:JSON.stringify({text:text})})
+      .then(function(r){ if(!r.ok) throw new Error('voice'); return r.blob(); })
+      .then(function(b){ cache[text]=b; return b; });
+  get.then(function(blob){
+    if(myToken!==token) return;
+    var url=URL.createObjectURL(blob);
+    audio=new Audio(url);
+    audio.onended=audio.onerror=function(){ try{ URL.revokeObjectURL(url); }catch(e){} if(myToken===token) done(); };
+    var p=audio.play();
+    if(p && p.catch) p.catch(function(){ if(myToken===token) fail(); });
+  }).catch(function(){ if(myToken===token) fail(); });
+}
+
+B.say=function(text, done){
+  B.hush();
+  var myToken=token;
+  var line=B.clean(text);
+  var finish=function(){ pulse(false, B.onSpeakAmp); if(done) done(); };
+  if(!line){ finish(); return; }
+  pulse(true, B.onSpeakAmp);
+  if(B.cloudVoice()) viaCloud(line, myToken, finish, function(){ viaBrowser(line, myToken, finish); });
+  else viaBrowser(line, myToken, finish);
+};
+
+B.warm=function(text){
+  var line=B.clean(text);
+  if(!B.cloudVoice() || cache[line]) return;
+  fetch(B.config.voice, {method:'POST', headers:{'content-type':'application/json'}, body:JSON.stringify({text:line})})
+    .then(function(r){ return r.ok ? r.blob() : null; })
+    .then(function(b){ if(b) cache[line]=b; })
+    .catch(function(){});
 };
 })();

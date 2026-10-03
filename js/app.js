@@ -24,6 +24,7 @@ function paintBar(){
 function swap(render, root){
   if(orb){ orb.stop(); orb=null; }
   if(mic){ mic.abort(); mic=null; }
+  B.hush(); B.onSpeakAmp=null;
   if(root){ here=root; bar.hidden=false; paintBar(); }
   var old=stage.firstElementChild;
   function go(){
@@ -347,7 +348,7 @@ function talk(door){
     t.appendChild(zone);
 
     var cap=el('div','cap');
-    var capEl=el('p','ph','Tap the orb and just talk');
+    var capEl=el('p','ph', (B.prefs.hands!==false && B.speechSupported) ? 'Tap the orb and I will start' : 'Tap the orb and just talk');
     cap.appendChild(capEl);
     t.appendChild(cap);
 
@@ -363,10 +364,11 @@ function talk(door){
     var tb=el('div','talkbar');
     var type=el('button','btn quiet', B.ICON.keyboard);
     type.setAttribute('aria-label','Type instead');
+    var vo=el('button','btn quiet','');
     var done=el('button','btn primary','Tell me a bit more');
     done.disabled=true;
     done.addEventListener('click', function(){ card(S); });
-    tb.appendChild(type); tb.appendChild(done);
+    tb.appendChild(type); tb.appendChild(vo); tb.appendChild(done);
     t.appendChild(tb);
 
     s.appendChild(t);
@@ -414,7 +416,6 @@ function talk(door){
           }
           q.textContent=n.q;
           qh.textContent=B.prefs.lang==='hinglish' ? n.h : '';
-          B.say(n.q);
         } else {
           q.textContent='That is enough to work with.';
           qh.textContent=B.prefs.lang==='hinglish' ? 'Aur kuch add karna ho to bolo, warna card bana lo.' : 'Add anything else, or see your read.';
@@ -424,19 +425,70 @@ function talk(door){
         done.textContent = ready ? 'See my read' : 'Tell me a bit more';
       }
 
+      var hands = B.prefs.hands!==false;
+      var speaking=false, spoke=false, quiet=null, seen={};
+      B.onSpeakAmp=function(v){ if(orb) orb.setAmp(v); };
+
+      function paintVo(){
+        vo.innerHTML=hands ? B.ICON.speaker : B.ICON.speakeroff;
+        vo.setAttribute('aria-label', hands ? 'Voice on' : 'Voice off');
+        vo.setAttribute('aria-pressed', hands ? 'true' : 'false');
+      }
+      paintVo();
+      vo.addEventListener('click', function(){
+        hands=!hands;
+        B.setPref('hands', hands);
+        paintVo();
+        if(!hands){ B.hush(); speaking=false; clearTimeout(quiet); }
+        B.toast(hands ? 'Voice on. I will ask and listen.' : 'Voice off. Tap the orb to talk.');
+      });
+
+      function listen(){
+        if(!hands || !B.speechSupported || !mic || mic.running()) return;
+        try{ mic.start(); }catch(e){}
+      }
+
+      function ack(){
+        var s=S.slots, line='';
+        if(s.duration && s.duration.label && !seen.duration) line='Okay, '+s.duration.label+'.';
+        else if(s.severity!==undefined && !seen.severity) line = s.severity>=7 ? 'That sounds rough.' : 'Got it.';
+        else if(s.tried && s.tried.length && !seen.tried) line='Thanks, noted what you tried.';
+        else line=['Okay.','Got it.','Thanks, that helps.'][S.turns.length%3];
+        if(s.duration) seen.duration=1;
+        if(s.severity!==undefined) seen.severity=1;
+        if(s.tried && s.tried.length) seen.tried=1;
+        return line;
+      }
+
+      function ask(prefix){
+        if(!hands) return;
+        var n=B.interview.next(S);
+        var line=(prefix?prefix+' ':'')+(n ? n.q : 'That is enough to work with. Add anything else, or see your read.');
+        speaking=true;
+        if(orb) orb.listen(false);
+        B.say(line, function(){ speaking=false; if(n) listen(); });
+      }
+
       function commit(text){
         if(!text || !text.trim()) return;
         S.turns.push(text.trim());
         var flags=B.interview.extract(S, text);
         setCaption(B.clean(text.trim()));
         refresh();
-        if(flags.length) showFlag(flags[0]);
+        if(flags.length){
+          showFlag(flags[0]);
+          if(hands){ speaking=true; B.say(flags[0].t+'. '+flags[0].d, function(){ speaking=false; }); }
+          return;
+        }
+        ask(ack());
+        var nx=B.interview.next(S);
+        if(nx && nx.q && B.warm) B.warm(nx.q);
       }
 
-      type.addEventListener('click', function(){ typeSheet(S, refresh, setCaption); });
+      type.addEventListener('click', function(){ B.hush(); speaking=false; typeSheet(S, refresh, setCaption); });
 
       mic=B.Mic({
-        onAmp:function(v){ if(orb) orb.setAmp(v); },
+        onAmp:function(v){ if(orb && !speaking) orb.setAmp(v); },
         onStart:function(){
           if(orb) orb.listen(true);
           ow.classList.add('live');
@@ -445,13 +497,17 @@ function talk(door){
         onText:function(fin, interim){
           capEl.className='';
           capEl.innerHTML=esc(fin)+(interim? ' <span class="im">'+esc(interim)+'</span>' : '');
+          clearTimeout(quiet);
+          if(hands && fin){ quiet=setTimeout(function(){ if(mic && mic.running()) mic.stop(); }, 2300); }
         },
         onEnd:function(fin){
+          clearTimeout(quiet);
           if(orb){ orb.listen(false); orb.setAmp(0); }
           ow.classList.remove('live');
           commit(fin);
         },
         onBlocked:function(){
+          clearTimeout(quiet);
           if(orb) orb.listen(false);
           ow.classList.remove('live');
           B.toast('Microphone is not available here. Type it instead.');
@@ -461,8 +517,10 @@ function talk(door){
 
       function toggle(){
         if(!mic) return;
-        if(mic.running()) mic.stop();
-        else if(!B.speechSupported) typeSheet(S, refresh, setCaption);
+        if(speaking){ B.hush(); speaking=false; listen(); if(!hands && B.speechSupported) mic.start(); return; }
+        if(mic.running()){ mic.stop(); return; }
+        if(!B.speechSupported){ typeSheet(S, refresh, setCaption); return; }
+        if(hands && !spoke){ spoke=true; ask(''); }
         else mic.start();
       }
       ow.addEventListener('click', toggle);
