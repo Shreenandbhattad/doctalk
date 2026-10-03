@@ -63,8 +63,11 @@ B.setPref=function(k,v){ B.prefs[k]=v; B.save(PRE+'prefs', B.prefs); B.applyPref
 B.applyPrefs();
 
 B.session=null;
+B.blankSession=function(door){
+  return { door:door||'symptom', started:Date.now(), turns:[], slots:{}, flags:[], meds:[] };
+};
 B.newSession=function(door){
-  B.session={ door:door||'symptom', started:Date.now(), turns:[], slots:{}, flags:[], meds:[] };
+  B.session=B.blankSession(door);
   return B.session;
 };
 
@@ -129,7 +132,16 @@ B.stagger=function(host, step, start){
     c.style.animation='rise .6s cubic-bezier(.17,.84,.36,1) '+(start+i*step)+'ms backwards';
   });
 };
+B.logo=function(px){
+  return '<svg class="logo" width="'+px+'" height="'+px+'" viewBox="0 0 48 48" aria-hidden="true">'+
+    '<defs><linearGradient id="lg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#4FBFBA"/><stop offset="1" stop-color="#8AE0DC"/></linearGradient></defs>'+
+    '<rect width="48" height="48" rx="14" fill="url(#lg)"/>'+
+    '<path d="M15 12h18a5 5 0 0 1 5 5v9a5 5 0 0 1-5 5H24l-9 7v-7a5 5 0 0 1-5-5v-9a5 5 0 0 1 5-5z" fill="#fff"/>'+
+    '<g fill="#06302F"><rect x="16" y="20" width="3" height="6" rx="1.5"/><rect x="20.5" y="16.5" width="3" height="13" rx="1.5"/>'+
+    '<rect x="25" y="19" width="3" height="9" rx="1.5"/><rect x="29.5" y="21" width="3" height="5" rx="1.5"/></g></svg>';
+};
 B.ICON={
+  chart:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M4.5 20.5v-7M10 20.5V4.5M15.5 20.5v-10M21 20.5v-5"/></svg>',
   back:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></svg>',
   dots:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="5" r="1.3"/><circle cx="12" cy="12" r="1.3"/><circle cx="12" cy="19" r="1.3"/></svg>',
   mic:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="2.5" width="6" height="11" rx="3"/><path d="M5.5 11a6.5 6.5 0 0 0 13 0M12 17.5V21"/></svg>',

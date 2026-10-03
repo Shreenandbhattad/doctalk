@@ -179,46 +179,55 @@ function completeness(session){ return filled(session)/SLOTS.length; }
 
 var ASK={
   duration:{
+    key:'duration',
     q:'How long has this been going on?',
     h:'Kitne din ya mahine se? Roughly bhi chalega.'
   },
   severity:{
+    key:'severity',
     q:'On a scale of zero to ten, how bad is it?',
     h:'Zero matlab bilkul nahi, das matlab bardasht ke bahar.'
   },
   pattern:{
+    key:'pattern',
     q:'Is it getting worse, staying the same, or coming and going?',
     h:'Badh raha hai, waisa hi hai, ya kabhi kabhi?'
   },
   tried:{
+    key:'tried',
     q:'What have you already tried for it?',
     h:'Koi tablet, cream, oil, gharelu nuskha, kuch bhi.'
   },
   impact:{
+    key:'impact',
     q:'What is it stopping you from doing?',
     h:'Neend, kaam, bahar jaana, confidence, kuch bhi.'
   },
   triggers:{
+    key:'triggers',
     q:'Have you noticed anything that makes it worse?',
     h:'Khana, stress, mausam, time of day.'
   },
   history:{
+    key:'history',
     q:'Has anyone in your family had this, or has it happened to you before?',
     h:'Ghar me kisi ko, ya pehle kabhi aapko.'
   }
 };
 var OPENERS={
-  symptom:{ q:'What is bothering you?', h:'Jo bhi hai, apne shabdon mein. Koi sun nahi raha.' },
-  ask:{     q:'What do you want to ask your doctor?', h:'Jo sawaal aap bhool jaate ho, abhi bol do.' }
+  symptom:{ key:'complaint', q:'What is bothering you?', h:'Jo bhi hai, apne shabdon mein. Koi sun nahi raha.' },
+  ask:{     key:'complaint', q:'What do you want to ask your doctor?', h:'Jo sawaal aap bhool jaate ho, abhi bol do.' }
 };
 
 function nextQuestion(session){
-  var s=session.slots;
+  var s=session.slots, sk=session.skipped||{};
   if(!s.complaint) return OPENERS.symptom;
+  if(session.turns.length>=12) return null;
   var order=['duration','severity'];
   var i,k;
   for(i=0;i<order.length;i++){
     k=order[i];
+    if(sk[k]) continue;
     if(k==='severity'){ if(s.severity===undefined) return ASK[k]; continue; }
     if(!s[k]) return ASK[k];
   }
@@ -226,15 +235,129 @@ function nextQuestion(session){
   if(area){
     for(i=0;i<area.ask.length;i++){
       var a=area.ask[i];
-      if(s[a.k]===undefined) return {q:a.q, h:a.h, pick:a.pick, key:a.k};
+      if(s[a.k]===undefined && !sk[a.k]) return {q:a.q, h:a.h, pick:a.pick, key:a.k};
     }
   }
   order=['tried','impact','pattern','triggers','history'];
   for(i=0;i<order.length;i++){
     k=order[i];
+    if(sk[k]) continue;
     if(!s[k] || s[k].length===0) return ASK[k];
   }
   return null;
+}
+
+
+var STOP={to:1,the:1,and:1,days:1,day:1,over:1,under:1,it:1,in:1,a:1,of:1,or:1,i:1,can:1,think:1,something:1,some:1,still:1};
+function words(label){
+  return norm(label).split(' ').filter(function(w){ return w.length>1 && !STOP[w]; });
+}
+function isSet(session, key){
+  var v=session.slots[key];
+  if(key==='severity') return v!==undefined;
+  if(v===undefined || v===null) return false;
+  if(typeof v==='object' && v.length!==undefined) return v.length>0;
+  return !!v;
+}
+function pickEntry(session, key){
+  var area=session.slots.area && B.conditions.get(session.slots.area);
+  if(!area) return null;
+  for(var i=0;i<area.ask.length;i++) if(area.ask[i].k===key) return area.ask[i];
+  return null;
+}
+var YES=/\b(yes|yeah|yep|haan|han|ha|haa|sure|correct|sahi|definitely)\b/;
+var NO=/\b(no|nope|nahi|nahin|never|none|nothing|nai)\b/;
+
+function fillPick(session, key, t){
+  var e=pickEntry(session, key); if(!e) return;
+  var vals=e.pick.map(function(p){ return p[0]; });
+  if(YES.test(t) && !NO.test(t) && vals.indexOf('yes')>-1){ session.slots[key]='yes'; return; }
+  if(NO.test(t) && vals.indexOf('no')>-1){ session.slots[key]='no'; return; }
+  var best=null, bestN=0;
+  e.pick.forEach(function(p){
+    var n=0;
+    words(p[1]).forEach(function(w){ if(has(t,w)) n++; });
+    if(n>bestN){ bestN=n; best=p[0]; }
+  });
+  if(best){ session.slots[key]=best; return; }
+  var n=numberIn(t);
+  if(n!==null && key==='cycle2'){ session.slots[key]= n<21?'short': n<=35?'normal':'long'; }
+}
+
+function fillLoose(session, key, text){
+  var s=session.slots, t=norm(text);
+  if(pickEntry(session, key)){ fillPick(session, key, t); return; }
+  if(key==='duration'){
+    var m;
+    if((m=t.match(/(\d+|a|an|one)\s*(?:and a half\s*)?(week|month|year|din|hafta|mahina|saal)/))){
+      var n=isNaN(parseInt(m[1],10)) ? 1 : parseInt(m[1],10), u=m[2];
+      var d=durationIn(n+' '+u); if(d){ s.duration=d; return; }
+    }
+    if(/couple of weeks|do hafte/.test(t)){ s.duration={label:'a couple of weeks', days:14}; return; }
+    if(/couple of months|do mahine/.test(t)){ s.duration={label:'a couple of months', days:60}; return; }
+    if(/few days|kuch din|pichle kuch din/.test(t)){ s.duration={label:'a few days', days:3}; return; }
+    if(/few weeks|kuch hafte/.test(t)){ s.duration={label:'a few weeks', days:21}; return; }
+    if(/few months|kuch mahine|pichle kuch mahine/.test(t)){ s.duration={label:'a few months', days:90}; return; }
+    if(/last year|pichle saal|since last year/.test(t)){ s.duration={label:'about a year', days:365}; return; }
+    if(/last month|pichle mahine/.test(t)){ s.duration={label:'about a month', days:30}; return; }
+    if(/last week|pichle hafte/.test(t)){ s.duration={label:'about a week', days:7}; return; }
+    if(/yesterday|kal se|today|aaj se/.test(t)){ s.duration={label:'since yesterday', days:1}; return; }
+    if(/long time|kaafi time|bahut time|saalon|years/.test(t)){ s.duration={label:'a long time', days:365}; return; }
+    return;
+  }
+  if(key==='severity'){
+    var n2=numberIn(t);
+    if(n2!==null && n2<=10){ s.severity=n2; return; }
+    if(/not much|bilkul nahi|barely/.test(t)){ s.severity=2; return; }
+    if(/pretty|quite|really|very|terrible|awful|worst/.test(t)){ s.severity=8; return; }
+    return;
+  }
+  if(key==='pattern'){
+    if(/constant|continuous|nonstop|non stop|lagatar|all the time/.test(t)){ s.pattern='about the same every day'; return; }
+    if(/no change|not changed|stable|steady|waisa/.test(t)){ s.pattern='about the same every day'; return; }
+    if(/better|improv|kam/.test(t)){ s.pattern='slowly improving'; return; }
+    if(/worse|bigad|badh/.test(t)){ s.pattern='getting worse'; return; }
+    return;
+  }
+  if(key==='tried'){ if(NO.test(t) || /not yet|haven|kuch nahi/.test(t)) s.tried=['nothing yet']; return; }
+  if(key==='impact'){ if(NO.test(t) || /not really|not much/.test(t)) s.impact=['nothing much']; return; }
+  if(key==='triggers'){ if(NO.test(t) || /not sure|pata nahi|dont know|don t know/.test(t)) s.triggers=['nothing noticed']; return; }
+  if(key==='history'){
+    if(YES.test(t)) s.history='runs in the family';
+    else if(NO.test(t) || /not sure|pata nahi/.test(t)) s.history='is not known to run in the family';
+  }
+}
+
+// returns ok, retry or skip so the conversation always moves forward
+function resolve(session, key, text){
+  if(!key || key==='complaint') return 'ok';
+  session.tries=session.tries||{}; session.skipped=session.skipped||{};
+  if(isSet(session,key)) return 'ok';
+  fillLoose(session, key, text);
+  if(isSet(session,key)) return 'ok';
+  session.tries[key]=(session.tries[key]||0)+1;
+  if(session.tries[key]>=2){ session.skipped[key]=1; return 'skip'; }
+  return 'retry';
+}
+
+var SORRY=['Sorry, I did not catch that.','Sorry, say that once more?','I missed that one.'];
+var CLARIFY={
+  duration:'Roughly how long, in days, weeks or months?',
+  severity:'From zero to ten, how bad is it?',
+  pattern:'Is it getting worse, staying the same, or coming and going?',
+  tried:'Have you tried anything for it, even something small? Or nothing so far?',
+  impact:'Is it getting in the way of anything, like sleep or work? Or not really?',
+  triggers:'Does anything make it worse? Food, stress, weather? Or nothing you have noticed?',
+  history:'Has anyone in your family had this, or has it happened before? Yes or no is fine.'
+};
+function clarify(session, asked){
+  var pre=SORRY[(session.turns.length)%SORRY.length];
+  if(asked && asked.pick){
+    var labels=asked.pick.map(function(p){ return p[1].toLowerCase(); });
+    var list=labels.length>1 ? labels.slice(0,-1).join(', ')+', or '+labels[labels.length-1] : labels[0];
+    return pre+' Which fits best: '+list+'?';
+  }
+  return pre+' '+((asked && CLARIFY[asked.key]) || asked.q);
 }
 
 function answerPick(session, key, value){
@@ -284,7 +407,7 @@ function assess(session){
 B.interview = {
   AREAS:AREAS, FLAGS:FLAGS, SLOTS:SLOTS, PETALS:PETALS,
   extract:extract, next:nextQuestion, completeness:completeness, filled:filled,
-  answerPick:answerPick, assess:assess,
+  answerPick:answerPick, assess:assess, resolve:resolve, clarify:clarify,
   detectArea:detectArea, detectFlags:detectFlags,
   durationIn:durationIn, severityIn:severityIn, triedIn:triedIn,
   triggersIn:triggersIn, impactIn:impactIn, patternIn:patternIn, historyIn:historyIn,

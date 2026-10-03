@@ -152,7 +152,7 @@ p{margin:0}
 
 /* tab bar */
 .tabbar{position:fixed; bottom:0; left:50%; transform:translateX(-50%); width:100%; max-width:var(--col);
-  z-index:40; display:grid; grid-template-columns:repeat(4,1fr); align-items:center;
+  z-index:40; display:grid; grid-template-columns:repeat(5,1fr); align-items:center;
   height:calc(var(--tabh) + env(safe-area-inset-bottom,0px));
   padding-bottom:env(safe-area-inset-bottom,0px);
   background:color-mix(in srgb, var(--bg) 86%, transparent); backdrop-filter:blur(18px);
@@ -521,3 +521,55 @@ body::before{content:""; position:fixed; inset:0; z-index:0; pointer-events:none
 .petal.on{color:var(--acc-ink)}
 .tile .ti2,.acard .ai{background:color-mix(in srgb,var(--accent) 20%,transparent)}
 .preview .boxes i{border-color:var(--accent)}
+
+.cap .think::after{content:""; display:inline-block; width:34px; height:8px; vertical-align:middle;
+  background:radial-gradient(circle,var(--acc-ink) 3px,transparent 3.5px) 0 50%/11px 8px repeat-x;
+  animation:dots 1s steps(4) infinite}
+@keyframes dots{0%{clip-path:inset(0 100% 0 0)}100%{clip-path:inset(0 0 0 0)}}
+
+
+/* logo, wordmark */
+.brandmark{display:grid; place-items:center; width:44px; height:44px; border-radius:14px; flex:none;
+  box-shadow:0 8px 18px -10px color-mix(in srgb,var(--accent) 90%,transparent); transition:transform .2s var(--spring)}
+.brandmark:active{transform:scale(.92)}
+.logo{display:block; border-radius:inherit}
+.wordmark{display:flex; align-items:center; gap:10px; padding:6px 0 0; font-family:var(--disp); font-weight:600;
+  font-size:19px; letter-spacing:-.03em}
+.tabbtn span{font-size:10px}
+
+/* stats, live */
+.stats{display:grid; grid-template-columns:repeat(3,1fr); gap:10px; margin-bottom:12px}
+.stat{background:var(--surface); border:1px solid var(--line); border-radius:18px; padding:14px 14px 12px;
+  box-shadow:0 1px 2px rgba(10,26,58,.04)}
+.stat b{display:block; font-family:var(--disp); font-size:26px; font-weight:600; letter-spacing:-.04em}
+.stat span{font-size:11.5px; color:var(--muted)}
+.livecard{border-color:color-mix(in srgb,var(--accent) 55%,var(--line));
+  background:linear-gradient(180deg,color-mix(in srgb,var(--accent) 10%,var(--surface)),var(--surface))}
+.lvh{display:flex; align-items:center; gap:8px; margin-bottom:8px}
+.lvd,.livepill i{width:8px; height:8px; border-radius:50%; background:var(--uc,var(--good)); position:relative}
+.lvd{background:var(--accent)}
+.lvd::after,.livepill i::after{content:""; position:absolute; inset:0; border-radius:50%; background:inherit;
+  animation:halo 1.8s ease-out infinite}
+.livepill{display:inline-flex; align-items:center; gap:9px; align-self:center; margin:0 auto 12px;
+  padding:7px 13px 7px 11px; border-radius:999px; background:var(--surface); border:1px solid var(--line);
+  font-size:12.5px; font-weight:600; animation:pop .4s var(--spring)}
+.livepill b{font-weight:600; color:var(--muted); padding-left:9px; border-left:1px solid var(--line)}
+.livepill[hidden]{display:none}
+
+/* building */
+.build{flex:1; display:flex; flex-direction:column; justify-content:center; align-items:center; text-align:center}
+.build .bl{margin-bottom:22px; animation:breathe 2.2s ease-in-out infinite}
+.build .bl .logo{border-radius:18px; box-shadow:0 18px 34px -16px color-mix(in srgb,var(--accent) 90%,transparent)}
+.build h2{font-size:23px; margin-bottom:26px; max-width:16ch}
+@keyframes breathe{50%{transform:scale(1.07)}}
+.bsteps{list-style:none; margin:0; padding:0; text-align:left; display:grid; gap:14px}
+.bsteps li{display:flex; align-items:center; gap:12px; font-size:14.5px; color:var(--faint);
+  transition:color .3s, transform .4s var(--ease)}
+.bsteps .bk{width:20px; height:20px; border-radius:50%; border:1.5px solid var(--line); flex:none; position:relative;
+  transition:all .3s}
+.bsteps li.now{color:var(--ink); transform:translateX(3px)}
+.bsteps li.now .bk{border-color:var(--accent); border-top-color:transparent; animation:spin .7s linear infinite}
+.bsteps li.done{color:var(--muted)}
+.bsteps li.done .bk{background:var(--accent); border-color:var(--accent); animation:pop .3s var(--spring)}
+.bsteps li.done .bk::after{content:""; position:absolute; left:6px; top:2.5px; width:5px; height:9px;
+  border:solid var(--on); border-width:0 2px 2px 0; transform:rotate(40deg)}

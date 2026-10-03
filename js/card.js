@@ -40,8 +40,8 @@ function sentence(s){
   bits.push(lead + '.');
   if(s.severity!==undefined) bits.push('Rated ' + s.severity + ' out of 10.');
   if(s.pattern) bits.push('It is ' + s.pattern + '.');
-  if(s.triggers && s.triggers.length) bits.push('Worse with ' + s.triggers.join(', ') + '.');
-  if(s.impact && s.impact.length) bits.push('Affecting ' + s.impact.join(', ') + '.');
+  if(s.triggers && s.triggers.length && !/^nothing/.test(s.triggers[0])) bits.push('Worse with ' + s.triggers.join(', ') + '.');
+  if(s.impact && s.impact.length && !/^nothing/.test(s.impact[0])) bits.push('Affecting ' + s.impact.join(', ') + '.');
   if(s.history) bits.push('It ' + s.history + '.');
   return B.clean(bits.join(' '));
 }

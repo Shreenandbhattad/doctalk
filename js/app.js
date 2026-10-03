@@ -7,6 +7,7 @@ var here='home';
 var TABS=[
   ['home','Home', B.ICON.home],
   ['talk','Talk', B.ICON.wave],
+  ['insights','Insights', B.ICON.chart],
   ['tools','Tools', B.ICON.grid],
   ['you','You', B.ICON.user]
 ];
@@ -44,7 +45,8 @@ function swap(render, root){
 
 function go(name, arg){
   if(name==='home') home();
-  else if(name==='talk') talk(arg||'symptom');
+  else if(name==='talk') talk(arg);
+  else if(name==='insights') insights();
   else if(name==='tools') tools();
   else if(name==='you') you();
 }
@@ -53,8 +55,9 @@ function screen(cls){ return el('section','screen '+(cls||'pad')); }
 
 function header(){
   var h=el('div','hdr');
-  var a=el('div','ava', esc(B.initial()));
-  a.addEventListener('click', function(){ go('you'); });
+  var a=el('button','brandmark', B.logo(44));
+  a.setAttribute('aria-label','DocTalk home');
+  a.addEventListener('click', function(){ go('home'); });
   var b=el('div','hb');
   var hk=el('div','hk'); hk.textContent=B.greet();
   var hn=el('div','hn'); hn.textContent=B.firstName()||'there';
@@ -99,6 +102,8 @@ function onboard(step, draft){
     }
 
     if(step===0){
+      var wm=el('div','wordmark', B.logo(30)+'<span>DocTalk</span>');
+      s.appendChild(wm);
       var halo=el('div','halo');
       var ow=el('div','orbwrap');
       ow.style.cssText='width:168px;height:168px';
@@ -208,8 +213,7 @@ function onboard(step, draft){
     fin.addEventListener('click', function(){
       draft.at=Date.now();
       B.setMe(draft);
-      go('home');
-      B.toast('Ready when you are, '+(B.firstName()||'friend')+'.');
+      settle();
     });
     ob.appendChild(fin);
     s.appendChild(ob);
@@ -222,6 +226,29 @@ function onboard(step, draft){
     for(var k=1;k<=3;k++) d.appendChild(el('i', k===i?'on':''));
     return d;
   }
+}
+
+function settle(){
+  bar.hidden=true;
+  swap(function(){
+    var s=screen('full');
+    var w=el('div','build');
+    w.appendChild(el('div','bl', B.logo(64)));
+    w.appendChild(el('h2','','Setting things up for '+esc(B.firstName()||'you')));
+    var ul=el('ul','bsteps');
+    ['Keeping everything on this phone','Tuning the questions to you','Getting your space ready'].forEach(function(t){
+      ul.appendChild(el('li','', '<span class="bk"></span><span>'+esc(t)+'</span>'));
+    });
+    w.appendChild(ul); s.appendChild(w);
+    var items=ul.children, i=0;
+    function tick(){
+      if(i>0) items[i-1].classList.add('done');
+      if(i<items.length){ items[i].classList.add('now'); i++; setTimeout(tick, B.reduced?10:560); }
+      else setTimeout(function(){ go('home'); }, B.reduced?10:420);
+    }
+    setTimeout(tick, 250);
+    return s;
+  });
 }
 
 /* ---------- home ---------- */
@@ -238,7 +265,7 @@ function home(){
         ? 'Last time it was '+esc((last.title||'something').toLowerCase())+'. Pick that up again, or start something new.'
         : 'Talk for ninety seconds. It asks the follow ups that actually decide what a symptom means.')+'</p>';
     var hb=el('button','btn primary', B.ICON.mic+'<span>Start talking</span>');
-    hb.addEventListener('click', function(){ go('talk'); });
+    hb.addEventListener('click', function(){ go('talk','new'); });
     hero.appendChild(hb);
     var st=el('div','hstats');
     [['90 sec','to say it'],['6','things it asks'],['0','uploads']].forEach(function(x){
@@ -325,8 +352,9 @@ function row(icon, title, sub, onTap){
 
 /* ---------- talk ---------- */
 
-function talk(door){
-  var S=B.newSession(door||'symptom');
+function talk(mode){
+  var resume = mode!=='new' && B.session && B.session.turns.length && !B.session.saved;
+  var S = resume ? B.session : B.newSession('symptom');
   swap(function(){
     var s=screen('pad');
     s.appendChild(navbar('Home', function(){ go('home'); }));
@@ -352,6 +380,11 @@ function talk(door){
     cap.appendChild(capEl);
     t.appendChild(cap);
 
+    var live=el('button','livepill');
+    live.hidden=true;
+    live.addEventListener('click', function(){ go('insights'); });
+    t.appendChild(live);
+
     var picks=el('div','picks');
     t.appendChild(picks);
 
@@ -367,7 +400,7 @@ function talk(door){
     var vo=el('button','btn quiet','');
     var done=el('button','btn primary','Tell me a bit more');
     done.disabled=true;
-    done.addEventListener('click', function(){ card(S); });
+    done.addEventListener('click', function(){ B.hush(); building(S); });
     tb.appendChild(type); tb.appendChild(vo); tb.appendChild(done);
     t.appendChild(tb);
 
@@ -394,6 +427,14 @@ function talk(door){
             if(navigator.vibrate && !B.reduced){ try{ navigator.vibrate(8); }catch(e){} }
           }
         });
+        var A=B.interview.assess(S);
+        if(S.slots.area && A.area){
+          live.hidden=false;
+          var tone2 = A.urgency==='now' ? 'var(--bad)' : A.urgency==='soon' ? 'var(--warn)' : 'var(--good)';
+          live.style.setProperty('--uc', tone2);
+          var label = A.urgency==='now' ? 'See someone today' : A.urgency==='soon' ? 'Worth booking' : 'No rush';
+          live.innerHTML='<i></i><span>'+esc(A.area.title)+'</span><b>'+esc(label)+'</b>';
+        }
         var n=B.interview.next(S);
         picks.innerHTML='';
         if(n && n.pick){
@@ -453,39 +494,69 @@ function talk(door){
         if(s.duration && s.duration.label && !seen.duration) line='Okay, '+s.duration.label+'.';
         else if(s.severity!==undefined && !seen.severity) line = s.severity>=7 ? 'That sounds rough.' : 'Got it.';
         else if(s.tried && s.tried.length && !seen.tried) line='Thanks, noted what you tried.';
-        else line=['Okay.','Got it.','Thanks, that helps.'][S.turns.length%3];
+        else line=['Okay.','Got it.','Thanks, that helps.','Understood.'][S.turns.length%4];
         if(s.duration) seen.duration=1;
         if(s.severity!==undefined) seen.severity=1;
         if(s.tried && s.tried.length) seen.tried=1;
         return line;
       }
 
-      function ask(prefix){
-        if(!hands) return;
-        var n=B.interview.next(S);
-        var line=(prefix?prefix+' ':'')+(n ? n.q : 'That is enough to work with. Add anything else, or see your read.');
-        speaking=true;
-        if(orb) orb.listen(false);
-        B.say(line, function(){ speaking=false; if(n) listen(); });
+      function thinking(on){
+        if(on){ capEl.className='ph think'; capEl.textContent=''; }
       }
 
+      function speak(line, then){
+        if(!hands){ return; }
+        speaking=true;
+        if(orb) orb.listen(false);
+        B.say(line, function(){ speaking=false; if(then) then(); });
+      }
+
+      function ask(prefix){
+        var n=B.interview.next(S);
+        var line=(prefix?prefix+' ':'')+(n ? n.q : 'That is enough to work with. Tap see my read, or keep talking.');
+        speak(line, n ? listen : null);
+      }
+
+      var quietCount=0;
+
       function commit(text){
-        if(!text || !text.trim()) return;
+        var asked=B.interview.next(S);
+        if(!text || !text.trim()){
+          quietCount++;
+          if(!hands) return;
+          if(quietCount>=2){
+            capEl.className='ph'; capEl.textContent='Tap the orb when you are ready';
+            speak('No rush. Tap the orb whenever you are ready.', null);
+          } else {
+            speak('I did not catch anything. Take your time, I am listening.', listen);
+          }
+          return;
+        }
+        quietCount=0;
         S.turns.push(text.trim());
         var flags=B.interview.extract(S, text);
+        var res=B.interview.resolve(S, asked && asked.key, text);
         setCaption(B.clean(text.trim()));
         refresh();
         if(flags.length){
           showFlag(flags[0]);
-          if(hands){ speaking=true; B.say(flags[0].t+'. '+flags[0].d, function(){ speaking=false; }); }
+          if(hands){ speak(flags[0].t+'. '+flags[0].d, null); }
           return;
         }
-        ask(ack());
+        if(res==='retry'){
+          var cl=B.interview.clarify(S, asked);
+          qh.textContent=cl;
+          speak(cl, listen);
+          return;
+        }
+        thinking(true);
+        ask(res==='skip' ? 'No problem, we can leave that.' : ack());
         var nx=B.interview.next(S);
         if(nx && nx.q && B.warm) B.warm(nx.q);
       }
 
-      type.addEventListener('click', function(){ B.hush(); speaking=false; typeSheet(S, refresh, setCaption); });
+      type.addEventListener('click', function(){ B.hush(); speaking=false; typeSheet(commit); });
 
       mic=B.Mic({
         onAmp:function(v){ if(orb && !speaking) orb.setAmp(v); },
@@ -498,7 +569,7 @@ function talk(door){
           capEl.className='';
           capEl.innerHTML=esc(fin)+(interim? ' <span class="im">'+esc(interim)+'</span>' : '');
           clearTimeout(quiet);
-          if(hands && fin){ quiet=setTimeout(function(){ if(mic && mic.running()) mic.stop(); }, 2300); }
+          if(hands && fin){ quiet=setTimeout(function(){ if(mic && mic.running()) mic.stop(); }, 1400); }
         },
         onEnd:function(fin){
           clearTimeout(quiet);
@@ -511,7 +582,7 @@ function talk(door){
           if(orb) orb.listen(false);
           ow.classList.remove('live');
           B.toast('Microphone is not available here. Type it instead.');
-          typeSheet(S, refresh, setCaption);
+          typeSheet(commit);
         }
       });
 
@@ -519,13 +590,14 @@ function talk(door){
         if(!mic) return;
         if(speaking){ B.hush(); speaking=false; listen(); if(!hands && B.speechSupported) mic.start(); return; }
         if(mic.running()){ mic.stop(); return; }
-        if(!B.speechSupported){ typeSheet(S, refresh, setCaption); return; }
+        if(!B.speechSupported){ typeSheet(commit); return; }
         if(hands && !spoke){ spoke=true; ask(''); }
         else mic.start();
       }
       ow.addEventListener('click', toggle);
 
       refresh();
+      if(resume && S.turns.length) setCaption(B.clean(S.turns[S.turns.length-1]));
       if(!B.speechSupported){
         qh.textContent='This browser will not give the microphone. Tap the keyboard to type.';
       }
@@ -535,7 +607,7 @@ function talk(door){
   }, 'talk');
 }
 
-function typeSheet(S, after, onText){
+function typeSheet(onAdd){
   B.openSheet(function(sh){
     sh.appendChild(el('h2','','Type it instead'));
     sh.appendChild(el('p','lede','Same thing, no microphone needed.'));
@@ -545,16 +617,14 @@ function typeSheet(S, after, onText){
     sh.appendChild(ta);
     var b=el('button','btn primary wide','Add this');
     b.style.marginTop='12px';
-    b.addEventListener('click', function(){
+    function send(){
       var v=ta.value.trim();
       if(!v){ B.toast('Write a line first.'); return; }
-      S.turns.push(v);
-      var flags=B.interview.extract(S, v);
       B.closeSheet();
-      if(onText) onText(B.clean(v));
-      if(after) after();
-      if(flags.length) setTimeout(function(){ showFlag(flags[0]); }, 420);
-    });
+      setTimeout(function(){ onAdd(v); }, 200);
+    }
+    b.addEventListener('click', send);
+    ta.addEventListener('keydown', function(e){ if(e.key==='Enter' && !e.shiftKey){ e.preventDefault(); send(); } });
     sh.appendChild(b);
     setTimeout(function(){ try{ ta.focus(); }catch(e){} }, 380);
   });
@@ -562,8 +632,31 @@ function typeSheet(S, after, onText){
 
 /* ---------- the read ---------- */
 
+function building(S){
+  swap(function(){
+    var s=screen('full');
+    var w=el('div','build');
+    w.appendChild(el('div','bl', B.logo(56)));
+    w.appendChild(el('h2','','Putting your read together'));
+    var steps=['Listening back to what you said','Matching it against what doctors ask','Checking for anything urgent','Writing it up'];
+    var ul=el('ul','bsteps');
+    steps.forEach(function(t){ ul.appendChild(el('li','', '<span class="bk"></span><span>'+esc(t)+'</span>')); });
+    w.appendChild(ul);
+    s.appendChild(w);
+    var items=ul.children, i=0;
+    function tick(){
+      if(i>0) items[i-1].classList.add('done');
+      if(i<items.length){ items[i].classList.add('now'); i++; setTimeout(tick, B.reduced?10:520); }
+      else setTimeout(function(){ card(S); }, B.reduced?10:380);
+    }
+    setTimeout(tick, 200);
+    return s;
+  }, 'talk');
+}
+
 function card(S, from){
   var c=B.card.build(S), a=B.interview.assess(S), tab='story';
+  if(S.turns.length && !from && !S.saved) S.saved=true;
   if(S.turns.length && !from) B.remember({
     at:Date.now(), area:a.area, title:entryTitle(a, S),
     urgency:a.urgency, turns:S.turns.slice(0), door:S.door
@@ -661,7 +754,7 @@ function card(S, from){
       else B.toast('Select and copy.');
     });
     var again=el('button','btn ghost wide','Talk about something else');
-    again.addEventListener('click', function(){ go('talk'); });
+    again.addEventListener('click', function(){ go('talk','new'); });
     acts.appendChild(save); acts.appendChild(wa); acts.appendChild(copy); acts.appendChild(again);
     s.appendChild(acts);
     return s;
@@ -696,6 +789,180 @@ function fullText(c,a,S){
   }
   L.push(''); L.push('Not a diagnosis. Built from my own words.');
   return B.clean(L.join('\n'));
+}
+
+/* ---------- insights ---------- */
+
+var LINKS=[
+  [['hair','energy'],'Hair shedding with tiredness often shares one cause, usually iron or thyroid. One blood test can cover both.'],
+  [['hair','sleep'],'Poor sleep and shedding can feed each other. Mention both so sleep gets looked at too.'],
+  [['hair','period'],'Hair loss with uneven periods is worth a hormone check, including PCOS.'],
+  [['skin','period'],'Breakouts that flare around periods point to hormones, which changes what treatment is likely to work.'],
+  [['skin','gut'],'Digestion and skin often move together. Say both, it can change what gets tried first.'],
+  [['sleep','mood'],'Poor sleep and low mood feed each other, so raise them together rather than one at a time.'],
+  [['sleep','energy'],'Tiredness that does not clear with sleep is worth a thyroid, iron and vitamin D check.'],
+  [['gut','mood'],'Stress and the gut talk to each other, so a flare in one often follows the other.'],
+  [['weight','energy'],'Weight change with tiredness is a classic reason to check thyroid and blood sugar.'],
+  [['sexual','mood'],'Mood, stress and sexual health are tightly linked. A doctor will want to hear about both.'],
+  [['pain','sleep'],'Pain that wrecks sleep and sleep loss that worsens pain is worth raising as one problem.']
+];
+
+function sessionOf(entry){
+  var S=B.blankSession(entry.door||'symptom');
+  entry.turns.forEach(function(t){ S.turns.push(t); B.interview.extract(S,t); });
+  return S;
+}
+function toneOf(u){ return u==='now' ? 'var(--bad)' : u==='soon' ? 'var(--warn)' : 'var(--good)'; }
+function factsOf(S){
+  var s=S.slots, f=[];
+  if(s.duration) f.push(s.duration.label);
+  if(s.severity!==undefined) f.push(s.severity+' out of 10');
+  if(s.pattern) f.push(s.pattern);
+  return f.join(', ');
+}
+
+function insights(){
+  swap(function(){
+    var s=screen();
+    s.appendChild(header());
+    s.appendChild(el('div','title','Insights'));
+
+    var reads=B.history().slice().reverse().map(function(e){
+      var S=sessionOf(e); return {e:e, S:S, A:B.interview.assess(S)};
+    });
+    var live=null;
+    if(B.session && B.session.turns.length && !B.session.saved)
+      live={S:B.session, A:B.interview.assess(B.session)};
+
+    if(!reads.length && !live){
+      s.appendChild(el('p','sub','Your whole health picture builds here as you talk. Patterns, links between things, and what to ask for.'));
+      var e=el('div','empty');
+      e.innerHTML='<div class="eo">'+B.ICON.chart+'</div><p>Nothing to read yet. Talk something through and this fills in live.</p>';
+      s.appendChild(e);
+      var g=el('button','btn primary wide', B.ICON.mic+'<span>Start talking</span>');
+      g.addEventListener('click', function(){ go('talk','new'); });
+      s.appendChild(g);
+      return s;
+    }
+    s.appendChild(el('p','sub','Everything you have said, put together. Updates the moment you talk.'));
+
+    var all=reads.slice();
+    if(live) all.push({e:{at:Date.now()}, S:live.S, A:live.A, live:true});
+
+    if(live){
+      var lc=el('div','card livecard');
+      lc.appendChild(el('div','lvh','<span class="lvd"></span><span class="lbl">Live now</span>'));
+      lc.appendChild(el('div','ct', live.A.area ? live.A.area.title : 'Listening to you'));
+      var sl=live.S.slots, chips=el('div','chips'); chips.style.marginTop='12px';
+      [['When', sl.duration && sl.duration.label],
+       ['How bad', sl.severity!==undefined && sl.severity+'/10'],
+       ['Pattern', sl.pattern],
+       ['Tried', sl.tried && sl.tried.join(', ')],
+       ['Affects', sl.impact && sl.impact.join(', ')]
+      ].forEach(function(p){
+        if(!p[1]) return;
+        chips.appendChild(el('span','chip on', '<b style="font-weight:600;opacity:.7">'+p[0]+'</b>&nbsp;&nbsp;'+esc(p[1])));
+      });
+      if(!chips.children.length) chips.appendChild(el('span','chip','Waiting for details'));
+      lc.appendChild(chips);
+      var cont=el('button','btn quiet wide sm','Keep talking');
+      cont.style.marginTop='14px';
+      cont.addEventListener('click', function(){ go('talk'); });
+      lc.appendChild(cont);
+      s.appendChild(lc);
+    }
+
+    var urgent=all.filter(function(x){ return x.A.urgency!=='routine'; });
+    var areas={};
+    all.forEach(function(x){ if(x.S.slots.area) areas[x.S.slots.area]=1; });
+    var tried={};
+    all.forEach(function(x){ (x.S.slots.tried||[]).forEach(function(t){ if(!/^(nothing|something)/.test(t)) tried[t]=1; }); });
+
+    var stats=el('div','stats');
+    [[all.length,'reads'],[Object.keys(areas).length,'areas'],[urgent.length,'worth booking']].forEach(function(p){
+      stats.appendChild(el('div','stat','<b>'+p[0]+'</b><span>'+esc(p[1])+'</span>'));
+    });
+    s.appendChild(stats);
+
+    if(urgent.length){
+      var top=urgent.slice().sort(function(a,b){ return (b.A.urgency==='now') - (a.A.urgency==='now'); })[0];
+      var nb=el('div','urg');
+      nb.style.setProperty('--uc', toneOf(top.A.urgency));
+      nb.innerHTML='<span class="ud"></span><span><span class="ut">'+
+        (top.A.urgency==='now' ? 'One thing needs seeing today' : 'Book one appointment')+
+        '</span><span class="us">'+esc(top.A.area ? top.A.area.title+': ' : '')+esc(top.A.why)+'</span></span>';
+      s.appendChild(nb);
+    }
+
+    var byArea={};
+    all.forEach(function(x){ var id=x.S.slots.area||'general'; (byArea[id]=byArea[id]||[]).push(x); });
+    s.appendChild(sectionLabel('By area'));
+    var ac=el('div','card');
+    Object.keys(byArea).forEach(function(id){
+      var list=byArea[id], last=list[list.length-1];
+      var area=B.conditions.get(id);
+      var r=el('button','row tap');
+      var delta='';
+      var sv=list.filter(function(x){ return x.S.slots.severity!==undefined; });
+      if(sv.length>=2){
+        var d=sv[sv.length-1].S.slots.severity - sv[0].S.slots.severity;
+        delta = d<0 ? ' Down from '+sv[0].S.slots.severity+'.' : d>0 ? ' Up from '+sv[0].S.slots.severity+'.' : ' Unchanged.';
+      }
+      r.innerHTML='<span class="ri" style="background:none;color:'+toneOf(last.A.urgency)+'"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="5" fill="currentColor"/></svg></span>'+
+        '<span class="rb"><span class="rt">'+esc(area?area.title:'General')+
+        (list.length>1?' <span class="muted" style="font-weight:500">x'+list.length+'</span>':'')+'</span>'+
+        '<span class="rs">'+esc(factsOf(last.S)||'Not enough detail yet')+esc(delta)+'</span></span><span class="rc">&rsaquo;</span>';
+      r.addEventListener('click', function(){
+        if(last.live) go('talk'); else if(area) condition(id,'library'); else go('talk');
+      });
+      ac.appendChild(r);
+    });
+    s.appendChild(ac);
+
+    var ids=Object.keys(areas), hits=[];
+    LINKS.forEach(function(l){ if(ids.indexOf(l[0][0])>-1 && ids.indexOf(l[0][1])>-1) hits.push(l); });
+    var me=B.me||{};
+    if(me.sex==='female' && ids.indexOf('hair')>-1 && ids.indexOf('skin')>-1 && ids.indexOf('period')>-1)
+      hits.unshift([['hair','skin','period'],'Hair, skin and periods together is the combination worth asking about PCOS for.']);
+    if(hits.length){
+      s.appendChild(sectionLabel('How these connect'));
+      var lk=el('div','card');
+      hits.slice(0,4).forEach(function(h){
+        var names=h[0].map(function(id){ return B.conditions.get(id).title.split(' ')[0]; }).join(' + ');
+        var it=el('div','item');
+        it.innerHTML='<div class="it">'+esc(names)+'</div><div class="ix">'+esc(h[1])+'</div>';
+        lk.appendChild(it);
+      });
+      s.appendChild(lk);
+    }
+
+    var tests={};
+    all.forEach(function(x){ x.A.tests.forEach(function(t){ tests[t]=(tests[t]||0)+1; }); });
+    var tk=Object.keys(tests).sort(function(a,b){ return tests[b]-tests[a]; });
+    if(tk.length){
+      s.appendChild(sectionLabel('Ask for these in one visit'));
+      var tc=el('div','card');
+      var tw=el('div','chips');
+      tk.slice(0,10).forEach(function(t){ tw.appendChild(el('span','chip'+(tests[t]>1?' on':''), esc(t))); });
+      tc.appendChild(tw);
+      tc.appendChild(el('p','hint','Highlighted ones came up for more than one thing you mentioned. Bring the list rather than ordering them yourself.'));
+      s.appendChild(tc);
+    }
+
+    var tkeys=Object.keys(tried);
+    if(tkeys.length){
+      s.appendChild(sectionLabel('What you have already tried'));
+      var trc=el('div','card'), tr=el('div','chips');
+      tkeys.forEach(function(t){ tr.appendChild(el('span','chip',esc(t))); });
+      trc.appendChild(tr);
+      trc.appendChild(el('p','hint','Tell the doctor all of it, including what did nothing. It saves a repeat.'));
+      s.appendChild(trc);
+    }
+
+    s.appendChild(el('p','note','Built only from your own words, on this phone. It is a way to organise what you said, not a diagnosis.'));
+    B.reveal(s,{step:50,start:30});
+    return s;
+  }, 'insights');
 }
 
 /* ---------- tools ---------- */
@@ -781,7 +1048,7 @@ function condition(id, from){
 
     var go2=el('button','btn primary wide', B.ICON.mic+'<span>Talk about this</span>');
     go2.style.marginTop='4px';
-    go2.addEventListener('click', function(){ talk('symptom'); });
+    go2.addEventListener('click', function(){ talk('new'); });
     s.appendChild(go2);
     s.appendChild(el('p','note','Reference only. It does not diagnose, and the order changes once someone examines you.'));
     B.reveal(s,{step:60,start:40});
@@ -998,7 +1265,7 @@ function history(from){
       e.innerHTML='<div class="eo">'+B.ICON.clock+'</div><p>Nothing saved yet. Talk something through and it will show up here.</p>';
       s.appendChild(e);
       var g=el('button','btn primary wide', B.ICON.mic+'<span>Start talking</span>');
-      g.addEventListener('click', function(){ go('talk'); });
+      g.addEventListener('click', function(){ go('talk','new'); });
       s.appendChild(g);
       return s;
     }
@@ -1269,7 +1536,7 @@ function menu(){
     sh.appendChild(el('p','lede','A private place to say the thing out loud and see it clearly.'));
     var box=el('div','');
     box.style.marginTop='16px';
-    [[B.ICON.mic,'Start talking', function(){ B.closeSheet(); go('talk'); }],
+    [[B.ICON.mic,'Start talking', function(){ B.closeSheet(); go('talk','new'); }],
      [B.ICON.shield,'When to worry', function(){ B.closeSheet(); worry(); }],
      [B.ICON.book,'Condition library', function(){ B.closeSheet(); library(); }],
      [B.ICON.user,'Your details', function(){ B.closeSheet(); profile(); }]

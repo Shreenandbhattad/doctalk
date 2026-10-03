@@ -67,8 +67,9 @@ B.Mic=function(handlers){
         };
         rec.onerror=function(ev){
           running=false; stopMeter();
-          blocked = (ev.error==='not-allowed' || ev.error==='service-not-allowed' || ev.error==='audio-capture');
-          if(handlers.onBlocked) handlers.onBlocked(ev.error);
+          blocked = (ev.error==='not-allowed' || ev.error==='service-not-allowed' || ev.error==='audio-capture' ||
+                     ev.error==='network' || ev.error==='language-not-supported');
+          if(blocked && handlers.onBlocked) handlers.onBlocked(ev.error);
         };
         rec.onend=function(){
           running=false; stopMeter();

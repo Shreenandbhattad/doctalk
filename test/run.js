@@ -99,7 +99,7 @@ const hero=global.__findAll(stage,'.hero').length;
 const greet=global.__findAll(stage,'.hn')[0];
 const tabs=global.__findAll(global.document.getElementById('tabbar'),'.tabbtn').length;
 console.log('  home hero: '+(hero?'yes':'MISSING')+', greeting: '+(greet?greet.textContent:'none')+', tabs: '+tabs);
-if(!hero||tabs!==4) bad=true;
+if(!hero||tabs!==5) bad=true;
 if(!greet||greet.textContent!=='Riya') bad=true;
 
 global.window.DT.go('tools');
