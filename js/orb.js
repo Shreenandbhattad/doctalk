@@ -51,7 +51,7 @@ B.Orb=function(host, opts){
   function readTokens(){
     var cs=getComputedStyle(document.documentElement);
     function tok(n,f){ var v=cs.getPropertyValue(n).trim(); return v||f; }
-    leaf=tok('--leaf','#2F8F5B'); sage=tok('--sage','#9BD7B0'); tint=tok('--tint','#E8F5EC');
+    leaf=tok('--orb1','#E0527F'); sage=tok('--orb2','#FF8A5B'); tint=tok('--orb3','#FFD9A8');
     paintSkin();
   }
 
@@ -61,7 +61,7 @@ B.Orb=function(host, opts){
     sx.clearRect(0,0,W,W);
     var g=sx.createRadialGradient(c-r*0.34, c-r*0.40, r*0.06, c, c, r*1.15);
     g.addColorStop(0, rgba(tint,.98));
-    g.addColorStop(0.34, rgba(sage,.96));
+    g.addColorStop(0.38, rgba(sage,.97));
     g.addColorStop(1, rgba(leaf,1));
     sx.fillStyle=g;
     sx.fillRect(0,0,W,W);
@@ -91,7 +91,7 @@ B.Orb=function(host, opts){
     if(bloom && bloomFor===key) return bloom;
     bloomFor=key;
     bloom=ctx.createRadialGradient(cx,cy,base*0.55,cx,cy,base*1.7);
-    bloom.addColorStop(0, rgba(sage,.3));
+    bloom.addColorStop(0, rgba(sage,.34));
     bloom.addColorStop(1, rgba(sage,0));
     return bloom;
   }
@@ -125,7 +125,7 @@ B.Orb=function(host, opts){
       ctx.lineWidth=Math.max(1,dpr);
       for(var k=0;k<2;k++){
         var p=((t*1.2)+(k/2))%1;
-        ctx.strokeStyle=rgba(leaf,(1-p)*0.3*Math.min(1,amp*3));
+        ctx.strokeStyle=rgba(sage,(1-p)*0.34*Math.min(1,amp*3));
         ctx.beginPath(); ctx.arc(c,c,base*(1.02+p*0.5),0,6.2832); ctx.stroke();
       }
     }

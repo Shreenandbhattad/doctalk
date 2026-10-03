@@ -13,15 +13,19 @@ Not a diagnosis. Nothing leaves the phone.
 
 ## How it works
 
-Three taps, about ninety seconds.
+A short welcome asks your name, age band and what you want close at hand, then
+the app is four tabs.
 
-1. Pick a doorway. Something is bothering me, a prescription, or a question you
-   keep forgetting.
-2. Tap the orb and talk. Hinglish is fine. Captions appear live, a ring fills as
-   your story gets complete, and four petals open as you cover when, how bad,
-   what you tried and what it affects.
-3. Get the card. Summary, the story in order, what you have already tried, and
-   three things worth asking about. Save it, copy it, or send it.
+- **Home**: a greeting by name, your watched areas, quick tools and recent reads.
+- **Talk**: tap the orb and speak. Hinglish is fine. A ring fills as your story
+  gets complete and four petals open as you cover when, how bad, what you tried
+  and what it affects.
+- **Tools**: prescription reader, interaction check, a library of thirteen
+  condition areas, and a plain list of signs that mean today.
+- **You**: your details, saved reads, settings and a clear everything button.
+
+Every talk ends in a read with an urgency band, the story in order, what a
+doctor will weigh, what is usually checked and three things worth asking.
 
 ## What it listens for
 
@@ -100,6 +104,5 @@ js/app.js           screens and navigation
 
 ## Privacy
 
-No account and no server. The session lives in memory and disappears when the
-tab closes. Only the look and language settings are kept on the device. Clear
-everything is one tap in the menu.
+No account and no server. Your name, saved reads and settings live in this
+browser only, and clearing everything is one tap in the You tab.

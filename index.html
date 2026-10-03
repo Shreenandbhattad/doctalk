@@ -5,8 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>DocTalk</title>
 <meta name="description" content="Talk through what is bothering you, in private, and get a clear picture of it. Nothing leaves your phone.">
-<meta name="theme-color" content="#F4F8F3" media="(prefers-color-scheme: light)">
-<meta name="theme-color" content="#0C1711" media="(prefers-color-scheme: dark)">
+<meta name="theme-color" content="#0D0A13" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#0D0A13" media="(prefers-color-scheme: dark)">
 <link rel="manifest" href="manifest.webmanifest">
 <meta name="build" content="4">
 <link rel="icon" href="icons/favicon-32.png" sizes="32x32">
@@ -19,33 +19,28 @@
 <meta property="og:type" content="website">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Inter+Tight:wght@400;500;600&family=Noto+Sans+Devanagari:wght@400;500&display=swap">
-<link rel="stylesheet" href="app.css?v=3">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Sora:wght@500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700&family=Noto+Sans+Devanagari:wght@400;500&display=swap">
+<link rel="stylesheet" href="app.css?v=4">
 </head>
 <body>
 
-<div class="aur" aria-hidden="true"><i></i><i></i><i></i></div>
-<div class="grain" aria-hidden="true"></div>
+<div class="bgwrap" aria-hidden="true"><i></i><i></i><i></i></div>
 
-<main id="stage" class="stage">
-  <!-- every screen is painted here -->
-</main>
-
-<div class="disclaim" id="disclaim">Private on your phone. Not a diagnosis.</div>
+<div class="app"><main id="stage"></main><nav class="tabbar" id="tabbar" hidden></nav></div>
 
 <div id="toast" role="status" aria-live="polite"></div>
 <div class="scrim" id="scrim" hidden><div class="sheet" id="sheet" role="dialog" aria-modal="true"></div></div>
 <div class="flag" id="flag" hidden></div>
 
-<script src="js/core.js?v=3"></script>
-<script src="js/motion.js?v=3"></script>
-<script src="js/conditions.js?v=3"></script>
-<script src="js/orb.js?v=3"></script>
-<script src="js/speech.js?v=3"></script>
-<script src="js/interview.js?v=3"></script>
-<script src="js/card.js?v=3"></script>
-<script src="js/scan.js?v=3"></script>
-<script src="js/app.js?v=3"></script>
+<script src="js/core.js?v=4"></script>
+<script src="js/motion.js?v=4"></script>
+<script src="js/conditions.js?v=4"></script>
+<script src="js/orb.js?v=4"></script>
+<script src="js/speech.js?v=4"></script>
+<script src="js/interview.js?v=4"></script>
+<script src="js/card.js?v=4"></script>
+<script src="js/scan.js?v=4"></script>
+<script src="js/app.js?v=4"></script>
 <script>
 // kill any worker a previous build installed, so a deploy is never masked
 if('serviceWorker' in navigator){

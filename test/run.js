@@ -87,14 +87,41 @@ console.log('\nmedicine lookup');
 });
 
 console.log('\nnavigation');
-global.__findAll(stage,'.door')[0].click();
+const ob=global.__findAll(stage,'.ob').length;
+console.log('  welcome screen: '+(ob?'shown':'MISSING'));
+if(!ob) bad=true;
+
+global.window.DT.setPref('motion','calm');
+global.window.DT.setMe({name:'Riya', age:'20s', sex:'female', focus:['hair','skin']});
+global.window.DT.go('home');
+global.__flush(8);
+const hero=global.__findAll(stage,'.hero').length;
+const greet=global.__findAll(stage,'.hn')[0];
+const tabs=global.__findAll(global.document.getElementById('tabbar'),'.tabbtn').length;
+console.log('  home hero: '+(hero?'yes':'MISSING')+', greeting: '+(greet?greet.textContent:'none')+', tabs: '+tabs);
+if(!hero||tabs!==4) bad=true;
+if(!greet||greet.textContent!=='Riya') bad=true;
+
+global.window.DT.go('tools');
+global.__flush(8);
+const tools=global.__findAll(stage,'.tool').length;
+console.log('  tools: '+tools);
+if(tools!==4) bad=true;
+
+global.window.DT.go('you');
+global.__flush(8);
+const segs=global.__findAll(stage,'.seg').length;
+console.log('  settings groups: '+segs);
+if(segs!==3) bad=true;
+
+global.window.DT.go('talk');
 setTimeout(function(){
   global.__flush(8);
   const petals=global.__findAll(stage,'.petal').length;
-  const q=global.__findAll(stage,'.question')[0];
-  console.log('  room rendered, petals: '+petals);
+  const q=global.__findAll(stage,'.q')[0];
+  console.log('  talk rendered, petals: '+petals);
   console.log('  first question: '+(q?q.textContent:'none'));
-  console.log('  type fallback present: '+(global.__findAll(stage,'.roombar').length>0));
+  console.log('  type fallback present: '+(global.__findAll(stage,'.talkbar').length>0));
   if(petals!==4) bad=true;
   if(!q || !q.textContent) bad=true;
 
