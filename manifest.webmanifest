@@ -1,0 +1,17 @@
+{
+  "name": "DocTalk",
+  "short_name": "DocTalk",
+  "description": "Say it out loud once, in private. Leave with a card you can hand to your doctor.",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#F4F8F3",
+  "theme_color": "#F4F8F3",
+  "categories": ["health", "medical", "lifestyle"],
+  "icons": [
+    { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png" },
+    { "src": "icons/maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}
