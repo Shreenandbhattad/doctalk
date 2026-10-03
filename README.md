@@ -17,7 +17,7 @@ A short welcome asks your name, age band and what you want close at hand, then
 the app is four tabs.
 
 - **Home**: a greeting by name, your watched areas, quick tools and recent reads.
-- **Talk**: tap the orb and speak. Hinglish is fine. A ring fills as your story
+- **Talk**: tap the orb and speak. English by default, Hinglish if you switch it in You. A ring fills as your story
   gets complete and four petals open as you cover when, how bad, what you tried
   and what it affects.
 - **Tools**: prescription reader, interaction check, a library of thirteen

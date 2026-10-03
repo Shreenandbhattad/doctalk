@@ -319,6 +319,7 @@ function talk(door){
     var qn=el('div','qn','Question 1');
     var q=el('div','q');
     var qh=el('div','qh dev');
+    qh.style.minHeight='1.3em';
     qw.appendChild(qn); qw.appendChild(q); qw.appendChild(qh);
     t.appendChild(qw);
 
@@ -396,11 +397,11 @@ function talk(door){
             q.style.animation='rise .45s var(--ease)';
           }
           q.textContent=n.q;
-          qh.textContent=n.h;
+          qh.textContent=B.prefs.lang==='hinglish' ? n.h : '';
           B.say(n.q);
         } else {
           q.textContent='That is enough to work with.';
-          qh.textContent='Aur kuch add karna ho to bolo, warna card bana lo.';
+          qh.textContent=B.prefs.lang==='hinglish' ? 'Aur kuch add karna ho to bolo, warna card bana lo.' : 'Add anything else, or see your read.';
         }
         var ready=B.interview.filled(S)>=2;
         done.disabled=!ready;
@@ -463,9 +464,9 @@ function talk(door){
 function typeSheet(S, after, onText){
   B.openSheet(function(sh){
     sh.appendChild(el('h2','','Type it instead'));
-    sh.appendChild(el('p','lede','Same thing, no microphone needed. Hinglish is fine.'));
+    sh.appendChild(el('p','lede','Same thing, no microphone needed.'));
     var ta=el('textarea','textin');
-    ta.placeholder='Mere baal teen mahine se jhad rahe hain, upar se patla ho raha hai...';
+    ta.placeholder=B.prefs.lang==='hinglish' ? 'Mere baal teen mahine se jhad rahe hain...' : 'My hair has been thinning for three months...';
     ta.style.marginTop='14px';
     sh.appendChild(ta);
     var b=el('button','btn primary wide','Add this');
@@ -769,9 +770,9 @@ function you(){
 
     s.appendChild(sectionLabel('Settings'));
     var sc=el('div','card');
-    sc.appendChild(seg('Captions', [['hinglish','Hinglish'],['english','English']], B.prefs.lang, function(v){
+    sc.appendChild(seg('Language', [['english','English'],['hinglish','Hinglish']], B.prefs.lang, function(v){
       B.setPref('lang', v);
-      B.toast(v==='english' ? 'Captions in English.' : 'Captions in Hinglish.');
+      B.toast(v==='english' ? 'English.' : 'Hinglish.');
     }));
     sc.appendChild(seg('Look', [['system','System'],['light','Light'],['dark','Dark']], B.prefs.theme, function(v){
       B.setPref('theme', v); if(orb) orb.refresh();

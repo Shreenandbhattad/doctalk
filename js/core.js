@@ -47,7 +47,8 @@ B.closeSheet=function(){
   setTimeout(function(){ sc.hidden=true; B.$('#sheet').innerHTML=''; }, B.reduced?10:360);
 };
 
-B.prefs = B.load(PRE+'prefs') || {theme:'light', motion:'full', lang:'hinglish'};
+B.prefs = B.load(PRE+'prefs') || {};
+if(B.prefs.v!==2){ B.prefs={v:2, theme:'light', motion:B.prefs.motion||'full', lang:'english'}; B.save(PRE+'prefs', B.prefs); }
 B.reduced = !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
 B.applyPrefs=function(){
   var r=document.documentElement;
